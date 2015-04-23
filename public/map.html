@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html style="height:100%" lang="en"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>User timeline</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+    <script src="https://leancloud.cn/scripts/lib/av-0.5.1.min.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+</head>
+<body style="margin:100px 0 0px 0;padding: 0;height:100%">
+
+<div id="map" style="margin:auto auto;width: 80%; height: 80%"></div>
+
+<style>
+    #map {
+        height: 400px;
+    }
+</style>
+
+<script>
+    AV.initialize("mlg6g76on2b8xqzu2e2ghc2vkm4f0214smqgwzvg195qajbj", "7pu1411dmmuvrv51caudehxa1c7sdjcle07nh4knja6sm59m");
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                results = regex.exec(location.search);
+        return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
+    function initUser(installationId) {
+        var map = L.map('map').setView([39.9184, 116.3929], 12);
+        L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+            '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+            'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            id: 'examples.map-i875mjb7'
+        }).addTo(map);
+
+
+        var UserLocation = AV.Object.extend("UserLocation");
+        var query = new AV.Query(UserLocation);
+        query.equalTo('installation', installationId);
+        query.find().then(function (locations) {
+            console.log(locations.length);
+            var firstPos = locations[0].get('location');
+            map.setView([firstPos.latitude, firstPos.longitude], 12);
+
+            locations.forEach(function (location) {
+                L.marker([location.get('location').latitude, location.get('location').longitude])
+                        .addTo(map)
+            })
+        })
+
+        function onMapClick(e) {
+            popup
+                    .setLatLng(e.latlng)
+                    .setContent(e.latlng.lat + ',' + e.latlng.lng)
+                    .openOn(map);
+        }
+
+        map.on('click', onMapClick);
+
+        var popup = L.popup();
+    }
+
+    initUser(getParameterByName('ins'));
+
+</script>
+</body>
+</html>

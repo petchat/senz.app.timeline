@@ -1,1 +1,1 @@
-# senz_analyzer_timeline
+Cloud code project for senz_user_timeline. Cloud Code Guide: https://cn.avoscloud.com/docs/cloud_code_guide.html
