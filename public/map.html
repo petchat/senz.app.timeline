@@ -8,8 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+    <script type="text/javascript" src="http://documentcloud.github.com/underscore/underscore-min.js"></script>
     <script src="https://leancloud.cn/scripts/lib/av-0.5.1.min.js"></script>
     <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bHbEGIEzXaATRk08GLSZSGUA"></script>
+    <script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
 
 </head>
 <body style="margin:100px 0 0px 0;padding: 0;height:100%">
@@ -28,58 +31,160 @@
     //    AV.initialize('0lffhnvekj0ndyd8f1cgwabd71yi8vs2yjt1izp1xh7xu2jw', 'fescseluzujxchkh6gu7huzyato9f6be1fb73pysusbpnvv1')
 
     // senz.log.tracer
-    AV.initialize('9ra69chz8rbbl77mlplnl4l2pxyaclm612khhytztl8b1f9o', '1zohz2ihxp9dhqamhfpeaer8nh1ewqd9uephe9ztvkka544b')
+    //    AV.initialize('9ra69chz8rbbl77mlplnl4l2pxyaclm612khhytztl8b1f9o',
+    //            '1zohz2ihxp9dhqamhfpeaer8nh1ewqd9uephe9ztvkka544b')
+
+    var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
+    var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
+
+    AV.initialize(userlocationId, userlocationKey)
+
+    var evidenceIcon = L.icon({
+        iconUrl: 'evidence.png',
+//        iconRetinaUrl: 'my-icon@2x.png',
+        iconSize: [10, 10],
+        iconAnchor: [10, 10]
+//        popupAnchor: [-3, -76],
+//        shadowUrl: 'my-icon-shadow.png',
+//        shadowRetinaUrl: 'my-icon-shadow@2x.png',
+//        shadowSize: [68, 95],
+//        shadowAnchor: [22, 94]
+    });
+
+    var converter = function (points) {
+        var promise = new AV.Promise()
+        var new_points = [];
+        var i = 0;
+        var parseCallback = function (point) {
+            new_points.push(point);
+            i++;
+            if (i < points.length) {
+                BMap.Convertor.translate(points[i], 2, parseCallback);
+            } else {
+
+//                    callback(new_points);
+
+                var coors = []
+                new_points.forEach(function(point) {
+//                    coors.push([point.lat, point.lng])
+                    // need to revert lat and lng, because Baidu is so fucking stupid
+                    coors.push([point.lng, point.lat])
+                })
+
+                promise.resolve(coors)
+            }
+        };
+        BMap.Convertor.translate(points[i], 2, parseCallback);
+
+        return promise
+    };
 
 
-    var installationId = 'dKagpIQH1qrERocV0sOI8M1cjGSY1rOf'
-    var userId = '5539a2d2e4b00661303782b6'
-    var start = 1427772439000
-    var end = 1427952439000
+    var _findAll = function (query) {
+        return query.count().then(
+                function (count) {
+                    var promises = [];
+                    var pages = Math.ceil(count / 1000);
+                    for (var i = 0; i <= pages; i++) {
+                        var _query = _.clone(query);
+                        _query.limit(1000);
+                        _query.skip(i * 1000);
+                        promises.push(_query.find());
+                    }
+                    return AV.Promise.all(promises);
+                },
+                function (error) {
+                    return AV.Promise.error(error);
+                }
+        ).then(
+                function (results) {
+                    var rebuid_result = [];
+                    results.forEach(function (result_list) {
+                        result_list.forEach(function (list_item) {
+                            rebuid_result.push(list_item);
+                        });
+                    });
+                    return AV.Promise.as(rebuid_result);
+                },
+                function (error) {
+                    return AV.Promise.error(error);
+                }
+        );
+    };
 
-    var getDataFromLogTracer = function (iid) {
+    var getUserLocation = function (uid, tsStart, tsEnd) {
 
         var promise = new AV.Promise()
 
-        var _Installation = AV.Object.extend('_Installation')
+        var UserLocation = AV.Object.extend('UserLocation')
+        var User = AV.Object.extend('_User')
 
-        var installation = new _Installation()
+        var query = new AV.Query(UserLocation)
 
-//        var iq = new AV.Query(_Installation)
-        var iq = new AV.Query('_Installation')
+        var up = new User()
+        up.id = uid
 
-        iq.get(iid).then(function (result) {
-            console.log('installation:',result)
-        })
+        query.equalTo('user', up)
+        query.greaterThan('timestamp', tsStart)
+        query.lessThan('timestamp', tsEnd)
 
-//        var installation = new AV.Installation()
-        installation.id = iid
+        var raw = null
 
-        var Log = AV.Object.extend('Log')
-        var query = new AV.Query(Log)
-        query.equalTo('installation', installation)
-        query.limit(1000)
-        query.find().then(function (result) {
+        _findAll(query).then(function (result) {
 
-            valid = []
+            raw = result
+            var points = [];
+            for (var i = 0; i < result.length; i++) {
+                points.push(new BMap.Point(result[i].get('location').latitude, result[i].get('location').longitude));
+            }
+            converter(points).then(function (result) {
 
-            result.forEach(function (ele) {
-//                if ('location' in ele) {
-//                    valid.push(ele)
-//                }
-                if(ele.get('location')) {
-                    valid.push(ele)
+                for(var i= 0; i<result.length; i++) {
+                    var point = new AV.GeoPoint({latitude: result[i][0], longitude: result[i][1]});
+
+                    raw[i].set('location', point)
                 }
-            })
 
-            console.log('raw len:', result.length, 'valid len:', valid.length)
-            promise.resolve(valid)
-        }, function (error) {
-            console.error(error)
+
+                promise.resolve(raw)
+            })
+        })
+        return promise
+    }
+
+    var getUPois = function (uid) {
+        var promise = new AV.Promise()
+        var UPoi = AV.Object.extend('u_poi')
+        var User = AV.Object.extend('_User')
+
+        var query = new AV.Query(UPoi)
+
+        var up = new User()
+        up.id = uid
+
+        query.equalTo('user', up)
+
+        _findAll(query).then(function (result) {
+            promise.resolve(result)
         })
 
         return promise
     }
 
+    var getUPoiEvidences = function(upois) {
+        var promise = new AV.Promise()
+        var marked_UserLocation = AV.Object.extend('marked_UserLocation')
+
+        var query = new AV.Query(marked_UserLocation)
+        query.containedIn('u_poi', upois)
+        query.doesNotExist("u_poi_visit_log")
+
+        _findAll(query).then(function (result) {
+            promise.resolve(result)
+        })
+
+        return promise
+    }
 
     function getParameterByName(name) {
         name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -88,11 +193,9 @@
         return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
     }
 
-    function initUser(iid) {
+    function drawMap(uid, tsStart, tsEnd) {
+//      Init map
         var map = L.map('map').setView([39.9184, 116.3929], 12);
-
-
-
         L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
@@ -102,40 +205,129 @@
         }).addTo(map);
 
 
-//        query.find().then(function (locations) {
-        getDataFromLogTracer(iid).then(function (logs) {
+//      Get data
 
-            locations = logs
-//            logs.forEach(function (ele) {
-//                locations.push(ele.get('location'))
-//            })
+        userLocations = null
+        u_pois = null
+        markedUserLocations = null
+        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
+            userLocations = result
+//            userLocations = []
+            return getUPois(uid)
 
-            console.log(locations.length);
 
-            var firstPos = locations[0].get('location');
+        }).then(function (result) {
+            u_pois = result
 
+            return getUPoiEvidences(u_pois)
+        }).then(function (result) {
+//            markedUserLocations = result
+            markedUserLocations = []
+
+            markGbUpoiid = {}
+            markedUserLocations.forEach(function (mark) {
+                upoiid = mark.get('u_poi').id
+//                console.log('upoiid:', upoiid)
+                if (!(upoiid in markGbUpoiid)) {
+                    markGbUpoiid[upoiid] = []
+                }
+//                console.log('markGbUpoiid:', markGbUpoiid)
+
+                markGbUpoiid[upoiid].push(mark)
+            })
+
+            for(var key in markGbUpoiid) {
+                console.log(key, 'length:', markGbUpoiid[key].length)
+            }
+
+
+            console.log("userLocations.length:", userLocations.length)
+            console.log("u_pois.length:", u_pois.length)
+
+            var firstPos = userLocations[0].get('location');
             map.setView([firstPos.latitude, firstPos.longitude], 12);
 
-            locations.forEach(function (location) {
-                L.marker([location.get('location').latitude, location.get('location').longitude])
-                        .addTo(map)
+            userLocations.forEach(function (userLocation) {
+                var loc = userLocation.get('location')
+                var coor = [loc.latitude, loc.longitude]
+                var date = new Date(userLocation.get('timestamp'))
+
+                var popUp = '<p>' + date.toString() + '<br /> '
+                        + userLocation.get('timestamp') + '<br/>'
+                        + coor + '<br/>'
+                        + userLocation.id + '</p>'
+
+                L.marker(coor).addTo(map).bindPopup(popUp)
+            })
+
+            u_pois.forEach(function (upoi) {
+                var loc = upoi.get('location')
+                var coor = [loc.latitude, loc.longitude]
+                var poi_title = upoi.get('poi_title')
+
+                var popUp = '<p>' + poi_title + '<br />'
+                        + coor + '<br/>'
+                        + upoi.id + '</p>'
+
+                L.circleMarker(coor).addTo(map).bindPopup(popUp)
+            })
+
+            markedUserLocations.forEach(function(mark) {
+                var loc = mark.get('location')
+                var coor = [loc.latitude, loc.longitude]
+
+                var upoiId = mark.get('u_poi').id
+
+                var popUp = '<p> u_poi:' + upoiId+  '<br/>'
+                        + 'evidence:' + mark.id + ' </p>'
+
+                L.marker(coor, {icon: evidenceIcon}).addTo(map).bindPopup(popUp)
             })
         })
 
-
         function onMapClick(e) {
+            console.log(e)
             popup
                     .setLatLng(e.latlng)
                     .setContent(e.latlng.lat + ',' + e.latlng.lng)
                     .openOn(map);
         }
 
-        map.on('click', onMapClick);
+//        L.marker.onclick(onMarkerClick())
 
         var popup = L.popup();
     }
 
-    initUser(installationId);
+    var ts820156 = 1438451802000
+    var ts822123 = 1438521802000
+
+    var ts860000 = 1438790400000
+    var ts862400 = ts860000 + 24 * 60 * 60 * 1000
+
+    var tsavgstart = 1438617600000
+    var tsavgend = 1438876799000
+
+    var ios_user1 = '55bda7b900b0fac2af6a33de'
+    var ios_user2 = '55bca18600b0233368a664c5'
+    var android_user1 = '559e280ae4b0d4d1b2104c16'
+    var tsupid = '55c0488300b0c8c194856f78'
+    var dup_uid = '558a5ee7e4b0acec6b941e96'
+    var shaoyao = '559e280ae4b0d4d1b2104c16'
+    var chaoyang = '55bda7b900b0fac2af6a33de'
+
+    var ts870000 = 1438876800000
+    var ts872400 = 1438963199000
+
+    var ts7310000 = 1438272000000
+    var ts7312400 = 1438358399000
+
+    var tts = 1438272000000
+    var tte = 1438358399000
+
+    var tsStat = 1
+    var tsEnd = 1
+
+    drawMap(chaoyang, 1438531200000, 1438617599000)
 
 </script>
 </body>

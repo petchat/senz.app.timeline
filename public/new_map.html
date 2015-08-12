@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <style type="text/css">
+        body, html, #allmap {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            font-family: "微软雅黑";
+        }
+    </style>
+    <script type="text/javascript" src="http://documentcloud.github.com/underscore/underscore-min.js"></script>
+    <script src="https://leancloud.cn/scripts/lib/av-0.5.1.min.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bHbEGIEzXaATRk08GLSZSGUA"></script>
+    <script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
+    <script type="text/javascript"
+            src="http://api.map.baidu.com/library/DistanceTool/1.2/src/DistanceTool_min.js"></script>
+    <title>地图展示</title>
+</head>
+<body>
+<div id="allmap"></div>
+<input type="button" value="开启" onclick="myDis.open()"/>
+<input type="button" value="关闭" onclick="myDis.close()"/>
+</body>
+</html>
+<script type="text/javascript">
+    // DAO
+    var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
+    var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
+
+    AV.initialize(userlocationId, userlocationKey)
+
+    var converter = function (points) {
+        var promise = new AV.Promise()
+        var new_points = [];
+        var i = 0;
+        var parseCallback = function (point) {
+            new_points.push(point);
+            i++;
+            if (i < points.length) {
+                BMap.Convertor.translate(points[i], 2, parseCallback);
+            } else {
+
+//                    callback(new_points);
+
+                var coors = []
+                new_points.forEach(function (point) {
+//                    coors.push([point.lat, point.lng])
+                    // need to revert lat and lng, because Baidu is so fucking stupid
+                    coors.push([point.lng, point.lat])
+                })
+
+                promise.resolve(coors)
+            }
+        };
+        BMap.Convertor.translate(points[i], 2, parseCallback);
+
+        return promise
+    };
+
+
+    var _findAll = function (query) {
+        return query.count().then(
+                function (count) {
+                    var promises = [];
+                    var pages = Math.ceil(count / 1000);
+                    for (var i = 0; i <= pages; i++) {
+                        var _query = _.clone(query);
+                        _query.limit(1000);
+                        _query.skip(i * 1000);
+                        promises.push(_query.find());
+                    }
+                    return AV.Promise.all(promises);
+                },
+                function (error) {
+                    return AV.Promise.error(error);
+                }
+        ).then(
+                function (results) {
+                    var rebuid_result = [];
+                    results.forEach(function (result_list) {
+                        result_list.forEach(function (list_item) {
+                            rebuid_result.push(list_item);
+                        });
+                    });
+                    return AV.Promise.as(rebuid_result);
+                },
+                function (error) {
+                    return AV.Promise.error(error);
+                }
+        );
+    };
+
+    var getUserLocation = function (uid, tsStart, tsEnd) {
+
+        console.log('start:', new Date(tsStart), 'end:', new Date(tsEnd))
+
+        var promise = new AV.Promise()
+
+        var UserLocation = AV.Object.extend('UserLocation')
+        var User = AV.Object.extend('_User')
+
+        var query = new AV.Query(UserLocation)
+
+        var up = new User()
+        up.id = uid
+
+        query.equalTo('user', up)
+        query.greaterThan('timestamp', tsStart)
+        query.lessThan('timestamp', tsEnd)
+
+        var raw = null
+
+        _findAll(query).then(function (result) {
+            promise.resolve(result)
+
+        })
+        return promise
+    }
+
+    var getUPois = function (uid) {
+        var promise = new AV.Promise()
+        var UPoi = AV.Object.extend('u_poi')
+        var User = AV.Object.extend('_User')
+
+        var query = new AV.Query(UPoi)
+
+        var up = new User()
+        up.id = uid
+
+        query.equalTo('user', up)
+
+        _findAll(query).then(function (result) {
+
+            promise.resolve(result)
+        })
+
+        return promise
+    }
+
+    var getUPoiEvidences = function (upois) {
+        var promise = new AV.Promise()
+        var marked_UserLocation = AV.Object.extend('marked_UserLocation')
+
+        var query = new AV.Query(marked_UserLocation)
+        query.containedIn('u_poi', upois)
+        query.doesNotExist("u_poi_visit_log")
+
+        _findAll(query).then(function (result) {
+            promise.resolve(result)
+        })
+
+        return promise
+    }
+
+    var addEvidences = function (map, evidences) {
+        var evidenceIcon = new BMap.Icon('evidence_icon.png', new BMap.Size(16, 16));
+
+        evidences.forEach(function (evidence) {
+            var loc = evidence.get('location')
+            var coor = [loc.latitude, loc.longitude]
+            var point = new BMap.Point(loc.longitude, loc.latitude)
+
+            var marker = new BMap.Marker(point, {icon: evidenceIcon});  // 创建标注
+            var date = new Date(evidence.get('timestamp'))
+
+            marker.addEventListener('click', function (e) {
+                var html = '<p>' + 'Evidence info:' + '<br/>'
+                        + date.toString() + '<br /> '
+                        + evidence.get('timestamp') + '<br/>'
+                        + coor + '<br/>'
+                        + "evidence.id:" + evidence.id + '<br/>'
+                        + "u_poi.id:" + evidence.get('u_poi').id + '</p>'
+
+                this.openInfoWindow(new BMap.InfoWindow(html));
+            })
+
+            map.addOverlay(marker)
+        })
+    }
+
+    // END OF DAO
+    var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
+        var markers = []
+        userLocations.forEach(function (userLocation) {
+
+            if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
+                var loc = userLocation.get('location')
+                var coor = [loc.latitude, loc.longitude]
+                var point = new BMap.Point(loc.longitude, loc.latitude);
+                var marker = new BMap.Marker(point);  // 创建标注
+                var date = new Date(userLocation.get('timestamp'))
+
+                marker.addEventListener("click", function (e) {
+
+                    if (userLocation.id in infoGbULID) {
+
+
+                        var info = infoGbULID[userLocation.id]
+                        var html = '<p>' + info + '<br/>'
+                                + '<b>user location info:</b>' + '<br/>'
+                                + date.toString() + '<br /> '
+                                + userLocation.get('timestamp') + '<br/>'
+                                + coor + '<br/>'
+                                + userLocation.id + '</p>'
+
+                        this.openInfoWindow(new BMap.InfoWindow(html));
+                    } else {
+                        var html = '<p>' + 'user location info:' + '<br/>'
+                                + date.toString() + '<br /> '
+                                + userLocation.get('timestamp') + '<br/>'
+                                + coor + '<br/>'
+                                + userLocation.id + '</p>'
+
+                        this.openInfoWindow(new BMap.InfoWindow(html));
+                    }
+                });
+
+                markers.push(marker)
+            }
+        })
+
+        markers.forEach(function (marker) {
+            map.addOverlay(marker)
+        })
+
+    }
+
+
+    var addUPOI = function (map, uPois) {
+        var upoiIcon = new BMap.Icon('u_poi_icon.png', new BMap.Size(40, 40));
+
+        uPois.forEach(function (upoi) {
+            var loc = upoi.get('location')
+            var coor = [loc.latitude, loc.longitude]
+            var poi_title = upoi.get('poi_title')
+
+            var point = new BMap.Point(loc.longitude, loc.latitude);
+            var marker = new BMap.Marker(point, {icon: upoiIcon});  // 创建标注
+
+            marker.addEventListener("click", function (e) {
+
+                var html = '<p>' + poi_title + '<br />'
+                        + coor + '<br/>'
+                        + upoi.id + '</p>'
+                this.openInfoWindow(new BMap.InfoWindow(html));
+            });
+
+            map.addOverlay(marker)
+        })
+
+    }
+
+
+    // 百度地图API功能
+    var map = new BMap.Map("allmap");    // 创建Map实例
+
+    map.addControl(new BMap.MapTypeControl());   //添加地图类型控件
+    //    map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
+    map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
+
+    var chaoyang = '55bda7b900b0fac2af6a33de'
+    var shaoyao = '559e280ae4b0d4d1b2104c16'
+    var shanghai = '558a5ee7e4b0acec6b941e96'
+    var ts = '55c0488300b0c8c194856f78'
+
+    //    var tes = '55bda7b900b0fac2af6a33de'
+
+    //    addUserLocation(map, chaoyang, 1438531200000, 1438617599000)
+    //    addUserLocation(map, shaoyao, 1438531200000, 1438617599000)
+
+    var ts7310000 = 1438272000000
+    var ts7312400 = 1438358399000
+
+    var centerLoc = null
+    var ts87b = 1438876800000
+    var ts810b = 1439049600000
+    var ts810e = 1439135999000
+
+    var chaoyangb = 1438531200000
+    var chaoyange = 1438617599000
+
+    var infogbulid = {
+        '55becee5e4b0d96749da3eb9': '<b>near u_poi info:</b>  <br/>' +
+        'Home, avg_start: 10:22 AM, avg_end: 9:08 PM, visit_frequency: 0.91 <br/>' +
+        'status: Leaving Home',
+
+        '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
+        'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
+        'status: Arrive Workplace'
+    }
+
+    var workList = ['55becee5e4b0d96749da3eb9',
+        '55bf000400b0cb9c41028ff2',
+        '55bf004000b042e60d1ea600',
+        '55bf00b9e4b0ea385d97c62e',
+        '55bf5fe660b28847cdfc1f50',
+        '55bf69aa00b0cfba23c10fa6',
+        '55bed663e4b0d96749dad632'
+    ]
+
+    var showAll = true
+    var chaoyangb = 1438531200000
+    var chaoyange = 1438617599000
+    //
+    var chaoyangguoyeE = (chaoyangb + chaoyange) / 2
+    var chaoyangguoyeB = chaoyangguoyeE - 24 * 60 * 60 * 1000
+
+    var chaoyangnovisitB = 1439049600000
+    var chaoyangnovisitE = 1439135999000
+
+    var tsb = 1439046101259
+    var tse = 1439178653541
+
+    var markMap = function (uid, tsStart, tsEnd, plotClusterEvidence) {
+        getUPois(uid).then(function (result) {
+            addUPOI(map, result)
+
+            if (plotClusterEvidence) {
+                return getUPoiEvidences(result)
+            } else {
+                console.log('makeing fake promise')
+                return AV.Promise.as([])
+            }
+        }).then(function (evidences) {
+            console.log('evidences:', evidences)
+            addEvidences(map, evidences)
+        })
+
+        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
+            centerLoc = result[0].get('location')
+            addUserLocation(map, result, infogbulid, workList, showAll)
+            map.centerAndZoom(new BMap.Point(centerLoc.longitude, centerLoc.latitude), 11);  // 初始化地图,设置中心点坐标和地图级别
+        })
+
+    }
+
+    var myDis = new BMapLib.DistanceTool(map);
+
+    markMap(shanghai, tsb, tse, false)
+
+</script>
