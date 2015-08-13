@@ -134,6 +134,7 @@
     };
 
     var getUserLocation = function (uid, tsStart, tsEnd) {
+        console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd)
 
         var promise = new AV.Promise()
 
@@ -152,6 +153,7 @@
         var raw = null
 
         _findAll(query).then(function (result) {
+            console.log('user location length:', result.length)
             promise.resolve(result)
 
         })
@@ -355,7 +357,6 @@
     var showAll = true
 
     var markMap = function (uid, tsStart, tsEnd, plotClusterEvidence, needToConvert) {
-
         console.log('start:', new Date(tsStart), 'end:', new Date(tsEnd))
 
 

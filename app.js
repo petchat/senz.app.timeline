@@ -30,16 +30,24 @@ app.get('/yesterday/:uid', function (req, res) {
         }
     }
 
-    res.sendfile(path.resolve(mapHtml))
+    //res.sendfile(path.resolve(mapHtml))
     res.render('new_map', data)
 });
 
-app.get('/range/:ts_start/:ts_end', function (req, res) {
-    console.log('ts_start:', req.param['ts_start'])
-    console.log('ts_end:', req.param['ts_end'])
+app.get('/range/:uid/:ts_start/:ts_end', function (req, res) {
 
-    res.sendfile('public/new_map.ejs')
+    var data = {
+        'data': {
+            'tsStart': parseInt(req.params.ts_start),
+            'tsEnd': parseInt(req.params.ts_end),
+            'uid': req.params.uid
+        }
+    }
 
+    console.log(data)
+
+    //res.sendfile('public/new_map.ejs')
+    res.render('new_map', data)
 })
 
 
