@@ -28,7 +28,7 @@
 <script type="text/javascript">
 
     param = <%- JSON.stringify(data) %>
-    console.log('param from backend:', param)
+            console.log('param from backend:', param)
 
     // DAO
     var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
@@ -91,7 +91,7 @@
                     coors.push([point.lat, point.lng])
                 })
 
-                console.log('convert finished')
+                console.log('convert finished, length:', coors.length)
                 promise.resolve(coors)
             }
         };
@@ -178,7 +178,7 @@
         query.equalTo('user', up)
 
         _findAll(query).then(function (result) {
-
+            console.log('u_poi length:', result.length)
             promise.resolve(result)
         })
 
@@ -194,6 +194,7 @@
         query.doesNotExist("u_poi_visit_log")
 
         _findAll(query).then(function (result) {
+            console.log('u_poi evidences length:', result.length)
             promise.resolve(result)
         })
 
@@ -357,7 +358,10 @@
     var showAll = true
 
     var markMap = function (uid, tsStart, tsEnd, plotClusterEvidence, needToConvert) {
-        console.log('start:', new Date(tsStart), 'end:', new Date(tsEnd))
+        console.log('start:', new Date(tsStart),
+                'end:', new Date(tsEnd),
+                'convert:', needToConvert,
+                'show evidence', plotClusterEvidence)
 
 
         getUPois(uid).then(function (result) {
@@ -374,8 +378,14 @@
             if (plotClusterEvidence) {
                 return getUPoiEvidences(result)
             } else {
-                console.log('makeing fake promise')
                 return AV.Promise.as([])
+            }
+        }).then(function (result) {
+
+            if (needToConvert) {
+                return AVConvertAdaptor(result)
+            } else {
+                return AV.Promise.as(result)
             }
         }).then(function (evidences) {
             console.log('evidences:', evidences)
@@ -405,14 +415,17 @@
     var tsEnd = param['tsEnd']
     var uid = param['uid']
     var host = param['host']
+    var showEvidence = param['showEvidence']
+    var needConvert = param['convert']
 
     console.log('uid:', uid)
     console.log('tsinghua:', tsinghua)
 
-    if(uid === tsinghua) {
-        markMap(uid, tsStart, tsEnd, false, true)
-    } else {
-        markMap(uid, tsStart, tsEnd, false, false)
-    }
+    //    var needConvert = false
+    //    if(uid === tsinghua || uid === chaoyang) {
+    //        needConvert = true
+    //    }
+
+    markMap(uid, tsStart, tsEnd, showEvidence, needConvert)
 
 </script>

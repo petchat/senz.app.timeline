@@ -14,11 +14,10 @@ app.get('/hello', function (req, res) {
     res.render('hello', {message: 'Congrats, you just set up your app!'});
 });
 
-app.get('/yesterday/:uid', function (req, res) {
+app.get('/uid/:uid/yesterday', function (req, res) {
     var today = new Date()
     var yesterday = new Date(today.setDate(today.getDate() - 1))
     var startEnd = tsStartEnd(yesterday)
-    var uid = req.params.uid
 
     console.log('uid:', uid)
 
@@ -26,7 +25,7 @@ app.get('/yesterday/:uid', function (req, res) {
         'data': {
             'tsStart': startEnd[0],
             'tsEnd': startEnd[1],
-            'uid': uid
+            'uid': req.params.uid
         }
     }
 
@@ -34,7 +33,30 @@ app.get('/yesterday/:uid', function (req, res) {
     res.render('new_map', data)
 });
 
-app.get('/range/:uid/:ts_start/:ts_end', function (req, res) {
+
+app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
+
+    var date = new Date(req.params.datestr)
+    var startEnd = tsStartEnd(date)
+
+    var data = {
+        'data': {
+            'tsStart': startEnd[0],
+            'tsEnd': startEnd[1],
+            'uid': req.params.uid,
+            'showEvidence': req.params.show_evidence == 'true',
+            'convert': req.params.convert == 'true'
+        }
+    }
+
+
+    console.log(data)
+
+    res.render('new_map', data)
+})
+
+
+app.get('/uid/:uid/range/:ts_start/:ts_end', function (req, res) {
 
     var data = {
         'data': {
