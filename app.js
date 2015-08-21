@@ -19,7 +19,7 @@ app.get('/uid/:uid/yesterday', function (req, res) {
     var yesterday = new Date(today.setDate(today.getDate() - 1))
     var startEnd = tsStartEnd(yesterday)
 
-    console.log('uid:', uid)
+    console.log('uid:', req.params.uid)
 
     var data = {
         'data': {

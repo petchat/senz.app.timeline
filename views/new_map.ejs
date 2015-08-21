@@ -11,7 +11,8 @@
             margin: 0;
         }
     </style>
-    <script type="text/javascript" src="http://documentcloud.github.com/underscore/underscore-min.js"></script>
+    <script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
+
     <script src="https://leancloud.cn/scripts/lib/av-0.5.1.min.js"></script>
     <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bHbEGIEzXaATRk08GLSZSGUA"></script>
     <script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
@@ -202,6 +203,12 @@
     }
 
     var addEvidences = function (map, evidences) {
+
+        if(evidences === null) {
+            evidences = []
+        }
+
+
         var iconUri = '/images/evidence_icon.png'
         var evidenceIcon = new BMap.Icon(iconUri, new BMap.Size(16, 16));
 
@@ -231,6 +238,12 @@
     // END OF DAO
     var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
         var markers = []
+
+        if(userLocations === null) {
+            userLocations = []
+            alert('user has no location data within time range')
+        }
+
         userLocations.forEach(function (userLocation) {
 
             if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
@@ -277,6 +290,12 @@
 
 
     var addUPOI = function (map, uPois) {
+
+        if(uPois === null) {
+            uPois = []
+            alert('user has not u_pois')
+        }
+
 //        var iconUri = 'http://google.com'
 //        var iconUri = 'https://www.baidu.com/img/bdlogo.png'
         var iconUri = '/images/u_poi_icon.png'
@@ -292,10 +311,20 @@
 
             marker.addEventListener("click", function (e) {
 
-                var html = '<p>' + poi_title + '<br />'
-                        + coor + '<br/>'
-                        + upoi.id + '</p>'
-                this.openInfoWindow(new BMap.InfoWindow(html));
+                if (upoi.id in infogbupoiid) {
+                    var info = infogbupoiid[upoi.id]
+
+                    var html = '<p>' + info + '<br />'
+                            + '<b>' + poi_title + '</b> <br />'
+                            + coor + '<br/>'
+                            + upoi.id + '</p>'
+                    this.openInfoWindow(new BMap.InfoWindow(html));
+                } else {
+                    var html = '<p>' + poi_title + '<br />'
+                            + coor + '<br/>'
+                            + upoi.id + '</p>'
+                    this.openInfoWindow(new BMap.InfoWindow(html))
+                }
             });
 
             map.addOverlay(marker)
@@ -341,6 +370,18 @@
         'status: Arrive Workplace'
     }
 
+    var infogbupoiid = {
+
+        '55baf12c00b0ee7fe0ff65d4': '<b>u_poi info:</b> <br/>' +
+        'Workplace, avg_start: 11:04 AM, avg_end: 8:50 PM, visit_frequency: 0.81',
+
+        '55cf10d800b0de09aaea58e3': '<b>u_poi info:</b> <br/>' +
+        'Frequent visit place, avg_start: 9:02 PM, avg_end: 9:14 PM, visit_frequency: 0.43',
+
+        '55baf12b00b0ee7fe0ff65c6': '<b>u_poi info:</b> <br/>' +
+        'Home, avg_start: 10:51 PM, avg_end: 10:22 AM, visit_frequency: 0.73'
+    }
+
     var chaoyang = '55bda7b900b0fac2af6a33de'
     var shaoyao = '559e280ae4b0d4d1b2104c16'
     var shanghai = '558a5ee7e4b0acec6b941e96'
@@ -364,7 +405,7 @@
                 'show evidence', plotClusterEvidence)
 
 
-        getUPois(uid).then(function (result) {
+        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
 
             if (needToConvert) {
                 return AVConvertAdaptor(result)
@@ -373,6 +414,22 @@
             }
 
         }).then(function (result) {
+
+            centerLoc = result[0].get('location')
+            addUserLocation(map, result, infogbulid, [], showAll)
+
+            return getUPois(uid)
+
+        }).then(function (result) {
+
+            if (needToConvert) {
+                return AVConvertAdaptor(result)
+            } else {
+                return AV.Promise.as(result)
+            }
+
+        }).then(function (result) {
+
             addUPOI(map, result)
 
             if (plotClusterEvidence) {
@@ -390,22 +447,9 @@
         }).then(function (evidences) {
             console.log('evidences:', evidences)
             addEvidences(map, evidences)
-        })
-
-        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-
-        }).then(function (result) {
-
-            centerLoc = result[0].get('location')
-            addUserLocation(map, result, infogbulid, [], showAll)
             map.centerAndZoom(new BMap.Point(centerLoc.longitude, centerLoc.latitude), 11);  // 初始化地图,设置中心点坐标和地图级别
         })
+
 
     }
 
