@@ -72,6 +72,16 @@ app.get('/uid/:uid/range/:ts_start/:ts_end', function (req, res) {
     res.render('new_map', data)
 })
 
+app.get('/phone/:phone', function(req, res) {
+    console.log('phone:', req.params.phone)
+
+    var data = {
+        'phone': req.params.phone
+    }
+
+    res.render('local_map', data)
+})
+
 
 var server = app.listen(9111, '0.0.0.0', function () {
 

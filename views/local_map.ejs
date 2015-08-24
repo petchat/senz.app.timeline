@@ -28,8 +28,8 @@
 </html>
 <script type="text/javascript">
 
-    param = <%- JSON.stringify(data) %>
-            console.log('param from backend:', param)
+    phone = <%- JSON.stringify(phone) %>
+            console.log('param from backend:', phone)
 
     // DAO
     var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
@@ -237,23 +237,21 @@
     }
 
 
-    var addCoordinates = function (map, coors, timeList, phoneList) {
+    var addCoordinates = function (map, coors, timeList) {
         var markers = []
         for (var i = 0; i < coors.length; i++) {
 
             var coor = coors[i]
-            var date = new Date(timeList[i])
-            var phone = phoneList[i]
+
+            var date = new Date(timeList[i] * 1000)
 
             var point = new BMap.Point(coor.lng, coor.lat);
             var marker = new BMap.Marker(point);  // 创建标注
 
             marker.addEventListener("click", function (e) {
 
-                var html = '<p>' + info + '<br/>'
-                        + '<b>phone:</b>' + phone + '<br/>'
+                var html = '<p>打车时间:<br/>'
                         + date.toString() + '<br /> '
-                        + coor + '<br/>'
 
                 this.openInfoWindow(new BMap.InfoWindow(html));
             });
@@ -264,6 +262,8 @@
         markers.forEach(function (marker) {
             map.addOverlay(marker)
         })
+
+        console.log('mark finished')
     }
 
     // END OF DAO
@@ -428,83 +428,47 @@
     ]
 
     var showAll = true
-    var markByLocalFile = function () {
+    var markByLocalFile = function (phone) {
         var taxiData = {"8618611791514": [], "8618601355436": [{"coor": {"lat": 39.907890896267, "lng": 116.429087456597}, "time": 1439812629.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810401.0}, {"coor": {"lat": 39.98981391059, "lng": 116.482019856771}, "time": 1439810400.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810402.0}, {"coor": {"lat": 39.968089735243, "lng": 116.452643229167}, "time": 1439837101.0}, {"coor": {"lat": 39.914627549913, "lng": 116.434919433594}, "time": 1439835281.0}, {"coor": {"lat": 39.989807128906, "lng": 116.481958821615}, "time": 1439810400.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}], "8618611714839": [], "8618600010164": [], "8618600364585": [], "8618601357994": [], "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}], "8618618137687": [], "8618611186421": [], "8618612752474": []}
 
+        if(phone in taxiData) {
+            var data = taxiData[phone]
 
+            var coors = []
+            var times = []
 
+            data.forEach(function (ele) {
+                coors.push(ele['coor'])
+                times.push(ele['time'])
+            })
+
+            addCoordinates(map, coors, times)
+
+        } else {
+            alert('dont have data for phone:', phone)
+        }
     }
 
-    var markByAVOS = function (uid, tsStart, tsEnd, plotClusterEvidence, needToConvert) {
-        console.log('start:', new Date(tsStart),
-                'end:', new Date(tsEnd),
-                'convert:', needToConvert,
-                'show evidence', plotClusterEvidence)
-
-
-        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-
-        }).then(function (result) {
-
-            centerLoc = result[0].get('location')
-            addUserLocation(map, result, infogbulid, [], showAll)
-
-            return getUPois(uid)
-
-        }).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-
-        }).then(function (result) {
-
-            addUPOI(map, result)
-
-            if (plotClusterEvidence) {
-                return getUPoiEvidences(result)
-            } else {
-                return AV.Promise.as([])
-            }
-        }).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-        }).then(function (evidences) {
-            console.log('evidences:', evidences)
-            addEvidences(map, evidences)
-            map.centerAndZoom(new BMap.Point(centerLoc.longitude, centerLoc.latitude), 11);  // 初始化地图,设置中心点坐标和地图级别
-        })
-    }
 
     var myDis = new BMapLib.DistanceTool(map);
 
-    var tsStart = param['tsStart']
-    var tsEnd = param['tsEnd']
-    var uid = param['uid']
-    var host = param['host']
-    var showEvidence = param['showEvidence']
-    var needConvert = param['convert']
-
-    console.log('uid:', uid)
-    console.log('tsinghua:', tsinghua)
+//    var tsStart = param['tsStart']
+//    var tsEnd = param['tsEnd']
+//    var uid = param['uid']
+//    var host = param['host']
+//    var showEvidence = param['showEvidence']
+//    var needConvert = param['convert']
+//
+//    console.log('uid:', uid)
+//    console.log('tsinghua:', tsinghua)
 
     //    var needConvert = false
     //    if(uid === tsinghua || uid === chaoyang) {
     //        needConvert = true
     //    }
 
-    markByAVOS(uid, tsStart, tsEnd, showEvidence, needConvert)
+    //    markByAVOS(uid, tsStart, tsEnd, showEvidence, needConvert)
+
+    markByLocalFile(phone)
 
 </script>
