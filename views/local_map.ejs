@@ -239,25 +239,26 @@
 
     var addCoordinates = function (map, coors, timeList) {
         var markers = []
-        for (var i = 0; i < coors.length; i++) {
-
-            var coor = coors[i]
-
-            var date = new Date(timeList[i] * 1000)
+//        for (var i = 0; i < coors.length; i++) {
+        coors.forEach(function(coor, index) {
 
             var point = new BMap.Point(coor.lng, coor.lat);
             var marker = new BMap.Marker(point);  // 创建标注
+            var date = new Date(timeList[index] * 1000)
 
             marker.addEventListener("click", function (e) {
 
+
                 var html = '<p>打车时间:<br/>'
                         + date.toString() + '<br /> '
+
+                console.log(html)
 
                 this.openInfoWindow(new BMap.InfoWindow(html));
             });
 
             markers.push(marker)
-        }
+        })
 
         markers.forEach(function (marker) {
             map.addOverlay(marker)
@@ -443,7 +444,8 @@
             })
 
             addCoordinates(map, coors, times)
-
+            var centerLoc = coors[0]
+            map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 11);  // 初始化地图,设置中心点坐标和地图级别
         } else {
             alert('dont have data for phone:', phone)
         }

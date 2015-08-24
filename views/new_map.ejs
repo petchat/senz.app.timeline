@@ -452,7 +452,7 @@
 
         }).then(function (result) {
 
-            centerLoc = result[0].get('location')
+            var centerLoc = result[0].get('location')
             addUserLocation(map, result, infogbulid, [], showAll)
 
             return getUPois(uid)
