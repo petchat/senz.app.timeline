@@ -38,7 +38,6 @@
     AV.initialize(userlocationId, userlocationKey)
 
 
-
     var AVConvertAdaptor = function (avObjects) {
         var promise = new AV.Promise()
         var points = []
@@ -240,7 +239,7 @@
     var addCoordinates = function (map, coors, timeList) {
         var markers = []
 //        for (var i = 0; i < coors.length; i++) {
-        coors.forEach(function(coor, index) {
+        coors.forEach(function (coor, index) {
 
             var point = new BMap.Point(coor.lng, coor.lat);
             var marker = new BMap.Marker(point);  // 创建标注
@@ -265,59 +264,6 @@
         })
 
         console.log('mark finished')
-    }
-
-    // END OF DAO
-    var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
-        var markers = []
-
-        if (userLocations === null) {
-            userLocations = []
-            alert('user has no location data within time range')
-        }
-
-        userLocations.forEach(function (userLocation) {
-
-            if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
-                var loc = userLocation.get('location')
-                var coor = [loc.latitude, loc.longitude]
-                var point = new BMap.Point(loc.longitude, loc.latitude);
-                var marker = new BMap.Marker(point);  // 创建标注
-                var date = new Date(userLocation.get('timestamp'))
-
-                marker.addEventListener("click", function (e) {
-
-                    if (userLocation.id in infoGbULID) {
-
-
-                        var info = infoGbULID[userLocation.id]
-                        var html = '<p>' + info + '<br/>'
-                                + '<b>user location info:</b>' + '<br/>'
-                                + date.toString() + '<br /> '
-                                + userLocation.get('timestamp') + '<br/>'
-                                + coor + '<br/>'
-                                + userLocation.id + '</p>'
-
-                        this.openInfoWindow(new BMap.InfoWindow(html));
-                    } else {
-                        var html = '<p>' + 'user location info:' + '<br/>'
-                                + date.toString() + '<br /> '
-                                + userLocation.get('timestamp') + '<br/>'
-                                + coor + '<br/>'
-                                + userLocation.id + '</p>'
-
-                        this.openInfoWindow(new BMap.InfoWindow(html));
-                    }
-                });
-
-                markers.push(marker)
-            }
-        })
-
-        markers.forEach(function (marker) {
-            map.addOverlay(marker)
-        })
-
     }
 
 
@@ -364,6 +310,42 @@
 
     }
 
+    var addStartEnd = function (map, start, end) {
+        var iconUri = '/images/u_poi_icon.png'
+        var upoiIcon = new BMap.Icon(iconUri, new BMap.Size(40, 40));
+
+        var addMarker = function (data) {
+
+            var coor = [data.coor.lat, data.coor.lng]
+            var type = data.type
+            var dispName = data.displayname
+
+            var point = new BMap.Point(data.coor.lng, data.coor.lat);
+            var marker = new BMap.Marker(point, {icon: upoiIcon});  // 创建标注
+
+            var time = null
+            if ('time' in data) {
+                time = new Date(data.time * 1000).toString()
+            }
+
+            marker.addEventListener("click", function (e) {
+
+                var html = '<p>' + type + '<br />'
+                        + '<b>' + dispName + '</b> <br />'
+                        + coor + '<br/>'
+                        + time + '<br/>'
+
+                this.openInfoWindow(new BMap.InfoWindow(html));
+            });
+
+            map.addOverlay(marker)
+        }
+
+        addMarker(end)
+        addMarker(start)
+
+    }
+
     var tsStartEnd = function (date) {
 //        var start = _.clone(date)
         var start = new Date(date.getTime());
@@ -392,47 +374,63 @@
     //    map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
     map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
 
-    var infogbulid = {
-        '55becee5e4b0d96749da3eb9': '<b>near u_poi info:</b>  <br/>' +
-        'Home, avg_start: 10:22 AM, avg_end: 9:08 PM, visit_frequency: 0.91 <br/>' +
-        'status: Leaving Home',
-
-        '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
-        'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
-        'status: Arrive Workplace'
-    }
-
-    var infogbupoiid = {
-
-        '55baf12c00b0ee7fe0ff65d4': '<b>u_poi info:</b> <br/>' +
-        'Workplace, avg_start: 11:04 AM, avg_end: 8:50 PM, visit_frequency: 0.81',
-
-        '55cf10d800b0de09aaea58e3': '<b>u_poi info:</b> <br/>' +
-        'Frequent visit place, avg_start: 9:02 PM, avg_end: 9:14 PM, visit_frequency: 0.43',
-
-        '55baf12b00b0ee7fe0ff65c6': '<b>u_poi info:</b> <br/>' +
-        'Home, avg_start: 10:51 PM, avg_end: 10:22 AM, visit_frequency: 0.73'
-    }
-
-    var chaoyang = '55bda7b900b0fac2af6a33de'
-    var shaoyao = '559e280ae4b0d4d1b2104c16'
-    var shanghai = '558a5ee7e4b0acec6b941e96'
-    var tsinghua = '55c0488300b0c8c194856f78'
-
-    var workList = ['55becee5e4b0d96749da3eb9',
-        '55bf000400b0cb9c41028ff2',
-        '55bf004000b042e60d1ea600',
-        '55bf00b9e4b0ea385d97c62e',
-        '55bf5fe660b28847cdfc1f50',
-        '55bf69aa00b0cfba23c10fa6',
-        '55bed663e4b0d96749dad632'
-    ]
 
     var showAll = true
     var markByLocalFile = function (phone) {
-        var taxiData = {"8618611791514": [], "8618601355436": [{"coor": {"lat": 39.907890896267, "lng": 116.429087456597}, "time": 1439812629.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810401.0}, {"coor": {"lat": 39.98981391059, "lng": 116.482019856771}, "time": 1439810400.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810402.0}, {"coor": {"lat": 39.968089735243, "lng": 116.452643229167}, "time": 1439837101.0}, {"coor": {"lat": 39.914627549913, "lng": 116.434919433594}, "time": 1439835281.0}, {"coor": {"lat": 39.989807128906, "lng": 116.481958821615}, "time": 1439810400.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}], "8618611714839": [], "8618600010164": [], "8618600364585": [], "8618601357994": [], "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}], "8618618137687": [], "8618611186421": [], "8618612752474": []}
+        var taxiData = {
+            "8618611791514": [],
+            "8618601355436": [{
+                "coor": {"lat": 39.907890896267, "lng": 116.429087456597},
+                "time": 1439812629.0
+            }, {
+                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
+                "time": 1439810401.0
+            }, {
+                "coor": {"lat": 39.98981391059, "lng": 116.482019856771},
+                "time": 1439810400.0
+            }, {
+                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
+                "time": 1439810402.0
+            }, {
+                "coor": {"lat": 39.968089735243, "lng": 116.452643229167},
+                "time": 1439837101.0
+            }, {
+                "coor": {"lat": 39.914627549913, "lng": 116.434919433594},
+                "time": 1439835281.0
+            }, {
+                "coor": {"lat": 39.989807128906, "lng": 116.481958821615},
+                "time": 1439810400.0
+            }, {
+                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
+                "time": 1439837101.0
+            }, {
+                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
+                "time": 1439837101.0
+            }, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}],
+            "8618611714839": [],
+            "8618600010164": [],
+            "8618600364585": [],
+            "8618601357994": [],
+            "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}],
+            "8618618137687": [],
+            "8618611186421": [],
+            "8618612752474": []
+        }
+        var startEnd = [
+            {
+                type: 'start',
+                'displayname': '北京慈铭体检望京分院',
+                'coor': {lat: 39.990540, lng: 116.485480},
+                'time': 1439782212
+            },
+            {
+                type: 'end',
+                displayname: '东城区建国门内大街中粮广场B座',
+                'coor': {lat: 39.912362, lng: 116.435699}
+            }
+        ]
 
-        if(phone in taxiData) {
+        if (phone in taxiData) {
             var data = taxiData[phone]
 
             var coors = []
@@ -444,6 +442,7 @@
             })
 
             addCoordinates(map, coors, times)
+            addStartEnd(map, startEnd[0], startEnd[1])
             var centerLoc = coors[0]
             map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 11);  // 初始化地图,设置中心点坐标和地图级别
         } else {
@@ -454,23 +453,8 @@
 
     var myDis = new BMapLib.DistanceTool(map);
 
-//    var tsStart = param['tsStart']
-//    var tsEnd = param['tsEnd']
-//    var uid = param['uid']
-//    var host = param['host']
-//    var showEvidence = param['showEvidence']
-//    var needConvert = param['convert']
-//
-//    console.log('uid:', uid)
-//    console.log('tsinghua:', tsinghua)
-
-    //    var needConvert = false
-    //    if(uid === tsinghua || uid === chaoyang) {
-    //        needConvert = true
-    //    }
-
-    //    markByAVOS(uid, tsStart, tsEnd, showEvidence, needConvert)
 
     markByLocalFile(phone)
+
 
 </script>

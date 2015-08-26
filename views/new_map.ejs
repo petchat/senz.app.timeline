@@ -398,7 +398,12 @@
 
         '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
         'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
-        'status: Arrive Workplace'
+        'status: Arrive Workplace',
+
+        '55b7a9a300b0df8ab5666093': '<b>u_poi info:</b> <br/>' +
+                "浦东国际机场, visit_frequency: 0.01",
+        '55a5de61e4b0e11f62b2b948': '<b>u_poi info:</b> <br/>' +
+                "北京邮电大学, avg_duration: 5.1 hours"
     }
 
     var infogbupoiid = {
@@ -441,6 +446,7 @@
                 'convert:', needToConvert,
                 'show evidence', plotClusterEvidence)
 
+        var centerLoc = null
 
         getUserLocation(uid, tsStart, tsEnd).then(function (result) {
 
@@ -452,7 +458,7 @@
 
         }).then(function (result) {
 
-            var centerLoc = result[0].get('location')
+            centerLoc = result[0].get('location')
             addUserLocation(map, result, infogbulid, [], showAll)
 
             return getUPois(uid)
