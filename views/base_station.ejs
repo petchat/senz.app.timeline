@@ -11,6 +11,7 @@
             margin: 0;
         }
     </style>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
     <script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
 
     <script src="https://leancloud.cn/scripts/lib/av-0.5.1.min.js"></script>
@@ -18,6 +19,8 @@
     <script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
     <script type="text/javascript"
             src="http://api.map.baidu.com/library/DistanceTool/1.2/src/DistanceTool_min.js"></script>
+
+
     <title>地图展示</title>
 </head>
 <body>
@@ -31,13 +34,12 @@
     param = <%- JSON.stringify(data) %>
             console.log('param from backend:', param)
 
+
     // DAO
     var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
     var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
 
     AV.initialize(userlocationId, userlocationKey)
-
-
 
     var AVConvertAdaptor = function (avObjects) {
         var promise = new AV.Promise()
@@ -51,12 +53,7 @@
             points.push(point)
         })
 
-//        console.log('before convert points:', points)
-
         converter(points).then(function (result) {
-
-//            console.log('after convert points:', result)
-
             for (var i = 0; i < result.length; i++) {
 
                 var point = new AV.GeoPoint({
@@ -237,86 +234,38 @@
     }
 
 
-    var addCoordinates = function (map, coors, timeList, phoneList) {
+    var addCoordinates = function (map, coors, timeList, cilac) {
         var markers = []
-        for (var i = 0; i < coors.length; i++) {
-
-            var coor = coors[i]
-            var date = new Date(timeList[i])
-            var phone = phoneList[i]
+//        for (var i = 0; i < coors.length; i++) {
+        coors.forEach(function (coor, index) {
 
             var point = new BMap.Point(coor.lng, coor.lat);
             var marker = new BMap.Marker(point);  // 创建标注
 
+            var date = new Date(timeList[index] * 1000)
+            var basestation = cilac[index]
+
             marker.addEventListener("click", function (e) {
 
-                var html = '<p>' + info + '<br/>'
-                        + '<b>phone:</b>' + phone + '<br/>'
+
+                var html = '<p>info:</p>'
                         + date.toString() + '<br /> '
-                        + coor + '<br/>'
+                        + 'lat:' + coor.lat + " lng:" + coor.lng + '<br/>'
+                        + 'ci:' + basestation.ci + ' lac:' + basestation.lac + '<br/>'
+
+                console.log(html)
 
                 this.openInfoWindow(new BMap.InfoWindow(html));
             });
 
             markers.push(marker)
-        }
-
-        markers.forEach(function (marker) {
-            map.addOverlay(marker)
-        })
-    }
-
-    // END OF DAO
-    var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
-        var markers = []
-
-        if (userLocations === null) {
-            userLocations = []
-            alert('user has no location data within time range')
-        }
-
-        userLocations.forEach(function (userLocation) {
-
-            if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
-                var loc = userLocation.get('location')
-                var coor = [loc.latitude, loc.longitude]
-                var point = new BMap.Point(loc.longitude, loc.latitude);
-                var marker = new BMap.Marker(point);  // 创建标注
-                var date = new Date(userLocation.get('timestamp'))
-
-                marker.addEventListener("click", function (e) {
-
-                    if (userLocation.id in infoGbULID) {
-
-
-                        var info = infoGbULID[userLocation.id]
-                        var html = '<p>' + info + '<br/>'
-                                + '<b>user location info:</b>' + '<br/>'
-                                + date.toString() + '<br /> '
-                                + userLocation.get('timestamp') + '<br/>'
-                                + coor + '<br/>'
-                                + userLocation.id + '</p>'
-
-                        this.openInfoWindow(new BMap.InfoWindow(html));
-                    } else {
-                        var html = '<p>' + 'user location info:' + '<br/>'
-                                + date.toString() + '<br /> '
-                                + userLocation.get('timestamp') + '<br/>'
-                                + coor + '<br/>'
-                                + userLocation.id + '</p>'
-
-                        this.openInfoWindow(new BMap.InfoWindow(html));
-                    }
-                });
-
-                markers.push(marker)
-            }
         })
 
         markers.forEach(function (marker) {
             map.addOverlay(marker)
         })
 
+        console.log('mark finished')
     }
 
 
@@ -363,6 +312,42 @@
 
     }
 
+    var addStartEnd = function (map, start, end) {
+        var iconUri = '/images/u_poi_icon.png'
+        var upoiIcon = new BMap.Icon(iconUri, new BMap.Size(40, 40));
+
+        var addMarker = function (data) {
+
+            var coor = [data.coor.lat, data.coor.lng]
+            var type = data.type
+            var dispName = data.displayname
+
+            var point = new BMap.Point(data.coor.lng, data.coor.lat);
+            var marker = new BMap.Marker(point, {icon: upoiIcon});  // 创建标注
+
+            var time = null
+            if ('time' in data) {
+                time = new Date(data.time * 1000).toString()
+            }
+
+            marker.addEventListener("click", function (e) {
+
+                var html = '<p>' + type + '<br />'
+                        + '<b>' + dispName + '</b> <br />'
+                        + coor + '<br/>'
+                        + time + '<br/>'
+
+                this.openInfoWindow(new BMap.InfoWindow(html));
+            });
+
+            map.addOverlay(marker)
+        }
+
+        addMarker(end)
+        addMarker(start)
+
+    }
+
     var tsStartEnd = function (date) {
 //        var start = _.clone(date)
         var start = new Date(date.getTime());
@@ -391,130 +376,94 @@
     //    map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
     map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
 
-    var infogbulid = {
-        '55becee5e4b0d96749da3eb9': '<b>near u_poi info:</b>  <br/>' +
-        'Home, avg_start: 10:22 AM, avg_end: 9:08 PM, visit_frequency: 0.91 <br/>' +
-        'status: Leaving Home',
 
-        '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
-        'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
-        'status: Arrive Workplace',
+    var processData = function (data) {
+        //group by near location, key 4 digits of latitude and longitude
+        for (ele in data) {
+            var sign = str(ele.result.lat)
 
-        '55b7a9a300b0df8ab5666093': '<b>u_poi info:</b> <br/>' +
-                "浦东国际机场, visit_frequency: 0.01",
-        '55a5de61e4b0e11f62b2b948': '<b>u_poi info:</b> <br/>' +
-                "北京邮电大学, avg_duration: 5.1 hours"
+
+        }
+
+
     }
 
-    var infogbupoiid = {
+    var getData = function () {
+        var promise = new AV.Promise()
+///Users/jiusi/WebstormProjects/senz.app.timeline/public/geo_valid_8618618264607.data
+        $.getJSON('/geo_valid.data', function (j) {
 
-        '55baf12c00b0ee7fe0ff65d4': '<b>u_poi info:</b> <br/>' +
-        'Workplace, avg_start: 11:04 AM, avg_end: 8:50 PM, visit_frequency: 0.81',
+            var result = []
 
-        '55cf10d800b0de09aaea58e3': '<b>u_poi info:</b> <br/>' +
-        'Frequent visit place, avg_start: 9:02 PM, avg_end: 9:14 PM, visit_frequency: 0.43',
+            j.forEach(function (ele) {
 
-        '55baf12b00b0ee7fe0ff65c6': '<b>u_poi info:</b> <br/>' +
-        'Home, avg_start: 10:51 PM, avg_end: 10:22 AM, visit_frequency: 0.73'
+//                ele = JSON.parse(ele)
+
+                var start_st = new Date(ele.start_time)
+                var start_ts = start_st.getTime()
+
+                var end_st = new Date(ele.end_time)
+                var end_ts = end_st.getTime()
+
+                ele.start_time = start_ts / 1000
+                ele.end_ts = end_ts / 1000
+
+                result.push(ele)
+            })
+
+            promise.resolve(result)
+        }, function (e) {
+            console.error(e)
+        })
+
+        return promise
     }
-
-    var chaoyang = '55bda7b900b0fac2af6a33de'
-    var shaoyao = '559e280ae4b0d4d1b2104c16'
-    var shanghai = '558a5ee7e4b0acec6b941e96'
-    var tsinghua = '55c0488300b0c8c194856f78'
-
-    var workList = ['55becee5e4b0d96749da3eb9',
-        '55bf000400b0cb9c41028ff2',
-        '55bf004000b042e60d1ea600',
-        '55bf00b9e4b0ea385d97c62e',
-        '55bf5fe660b28847cdfc1f50',
-        '55bf69aa00b0cfba23c10fa6',
-        '55bed663e4b0d96749dad632'
-    ]
 
     var showAll = true
-    var markByLocalFile = function () {
-        var taxiData = {"8618611791514": [], "8618601355436": [{"coor": {"lat": 39.907890896267, "lng": 116.429087456597}, "time": 1439812629.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810401.0}, {"coor": {"lat": 39.98981391059, "lng": 116.482019856771}, "time": 1439810400.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810402.0}, {"coor": {"lat": 39.968089735243, "lng": 116.452643229167}, "time": 1439837101.0}, {"coor": {"lat": 39.914627549913, "lng": 116.434919433594}, "time": 1439835281.0}, {"coor": {"lat": 39.989807128906, "lng": 116.481958821615}, "time": 1439810400.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}], "8618611714839": [], "8618600010164": [], "8618600364585": [], "8618601357994": [], "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}], "8618618137687": [], "8618611186421": [], "8618612752474": []}
+    var markByLocalFile = function (start, end) {
 
+        getData().then(function (trace) {
 
+            var inRange = []
+//            for (dot in trace) {
+//                if (dot['start_time'] < end && dot['start_time'] > start) {
+//                    inRange.append(dot)
+//                }
+//            }
 
-    }
+            trace.forEach(function (dot) {
+                if (dot['start_time'] < end && dot['start_time'] > start) {
+                    inRange.push(dot)
+                }
+            })
 
-    var markByAVOS = function (uid, tsStart, tsEnd, plotClusterEvidence, needToConvert) {
-        console.log('start:', new Date(tsStart),
-                'end:', new Date(tsEnd),
-                'convert:', needToConvert,
-                'show evidence', plotClusterEvidence)
+            var coors = []
+            var times = []
+            var cilac = []
+            inRange.forEach(function (dot) {
+                var geopoint = {
+                    'lat': dot.result.lat,
+                    'lng': dot.result.lng
+                }
+                coors.push(geopoint)
+                times.push(dot.start_time)
+                cilac.push({'ci': dot.ci, 'lac': dot.lac})
+            })
 
-        var centerLoc = null
+            addCoordinates(map, coors, times, cilac)
 
-        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
-
-            if(result === null || result.length == 0) {
-                alert('No data!')
-            }
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-
-        }).then(function (result) {
-
-            centerLoc = result[0].get('location')
-            addUserLocation(map, result, infogbulid, [], showAll)
-
-            return getUPois(uid)
-
-        }).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-
-        }).then(function (result) {
-
-            addUPOI(map, result)
-
-            if (plotClusterEvidence) {
-                return getUPoiEvidences(result)
-            } else {
-                return AV.Promise.as([])
-            }
-        }).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-        }).then(function (evidences) {
-            console.log('evidences:', evidences)
-            addEvidences(map, evidences)
-            map.centerAndZoom(new BMap.Point(centerLoc.longitude, centerLoc.latitude), 11);  // 初始化地图,设置中心点坐标和地图级别
+            var centerLoc = coors[0]
+            map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 11);  // 初始化地图,设置中心点坐标和地图级别
         })
     }
 
     var myDis = new BMapLib.DistanceTool(map);
 
-    var tsStart = param['tsStart']
-    var tsEnd = param['tsEnd']
-    var uid = param['uid']
-    var host = param['host']
-    var showEvidence = param['showEvidence']
-    var needConvert = param['convert']
+    var start = parseInt(param['start'])
+    var end = parseInt(param['end'])
 
-    console.log('uid:', uid)
-    console.log('tsinghua:', tsinghua)
 
-    //    var needConvert = false
-    //    if(uid === tsinghua || uid === chaoyang) {
-    //        needConvert = true
-    //    }
+    markByLocalFile(start, end)
 
-    markByAVOS(uid, tsStart, tsEnd, showEvidence, needConvert)
 
 </script>

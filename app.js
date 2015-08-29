@@ -49,7 +49,6 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
         }
     }
 
-
     console.log(data)
 
     res.render('new_map', data)
@@ -72,7 +71,7 @@ app.get('/uid/:uid/range/:ts_start/:ts_end', function (req, res) {
     res.render('new_map', data)
 })
 
-app.get('/phone/:phone', function(req, res) {
+app.get('/phone/:phone', function (req, res) {
     console.log('phone:', req.params.phone)
 
     var data = {
@@ -82,13 +81,44 @@ app.get('/phone/:phone', function(req, res) {
     res.render('local_map', data)
 })
 
+app.get('/basestation/start/:start/end/:end', function (req, res) {
+    var data = {
+        'data' : {
+            'start': req.params.start,
+            'end': req.params.end
+        }
+    }
+
+    console.log('base station, data:', data)
+
+    res.render('base_station', data)
+
+})
+
+app.get('/basestation/date/:date', function (req, res) {
+
+    var date = new Date(req.params.date)
+    var startEnd = tsStartEnd(date)
+
+
+    var data = {
+        'data': {
+            'start': startEnd[0]/1000,
+            'end': startEnd[1]/1000
+        }
+    }
+
+    res.render('base_station', data)
+
+})
+
 
 var server = app.listen(9111, '0.0.0.0', function () {
 
     var host = server.address().address
     var port = server.address().port;
 
-    console.log('Example app listening at http://%s:%s', host, port);
+    console.log('Example app listen g at http://%s:%s', host, port);
 });
 
 
