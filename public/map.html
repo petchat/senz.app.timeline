@@ -65,7 +65,7 @@
 //                    callback(new_points);
 
                 var coors = []
-                new_points.forEach(function(point) {
+                new_points.forEach(function (point) {
 //                    coors.push([point.lat, point.lng])
                     // need to revert lat and lng, because Baidu is so fucking stupid
                     coors.push([point.lng, point.lat])
@@ -139,7 +139,7 @@
             }
             converter(points).then(function (result) {
 
-                for(var i= 0; i<result.length; i++) {
+                for (var i = 0; i < result.length; i++) {
                     var point = new AV.GeoPoint({latitude: result[i][0], longitude: result[i][1]});
 
                     raw[i].set('location', point)
@@ -149,6 +149,37 @@
                 promise.resolve(raw)
             })
         })
+        return promise
+    }
+
+    var getUserLocationMongo = function (uid, tsStart, tsEnd) {
+        var promise = new AV.Promise()
+        
+        // http://119.254.111.40:3000/api/UserLocations?filter=
+        //  filter[where][and][0][uid]=5627226c00b09f851ff4a200
+        // &filter[where][and][1][timestamp][gt]=1446324297000f
+        // &filter[where][and][2][timestamp][lt]=1446341124000
+        // &filter[fields][location]=true
+        // &filter[fields][timestamp]=true
+
+        var where =  'filter[where][and][0][where][uid]=' + uid +
+                    '&filter[where][and][1][timestamp][gt]=' + tsStart +
+                    '&filter[where][and][2][timestamp][lt]=' + tsEnd
+
+        var fields = 'filter[fields][location]=true' +
+                    '&filter[fields][timestamp]=true'
+
+        var path = 'http://119.254.111.40:3000/api/UserLocations?filter=' +
+                where + '&' + fields
+
+        $.getJSON(path, function (data) {
+            if (data) {
+                promise.resolve(data)
+            } else {
+                promise.reject('load failed:', path)
+            }
+        })
+
         return promise
     }
 
@@ -171,7 +202,7 @@
         return promise
     }
 
-    var getUPoiEvidences = function(upois) {
+    var getUPoiEvidences = function (upois) {
         var promise = new AV.Promise()
         var marked_UserLocation = AV.Object.extend('marked_UserLocation')
 
@@ -236,7 +267,7 @@
                 markGbUpoiid[upoiid].push(mark)
             })
 
-            for(var key in markGbUpoiid) {
+            for (var key in markGbUpoiid) {
                 console.log(key, 'length:', markGbUpoiid[key].length)
             }
 
@@ -272,13 +303,13 @@
                 L.circleMarker(coor).addTo(map).bindPopup(popUp)
             })
 
-            markedUserLocations.forEach(function(mark) {
+            markedUserLocations.forEach(function (mark) {
                 var loc = mark.get('location')
                 var coor = [loc.latitude, loc.longitude]
 
                 var upoiId = mark.get('u_poi').id
 
-                var popUp = '<p> u_poi:' + upoiId+  '<br/>'
+                var popUp = '<p> u_poi:' + upoiId + '<br/>'
                         + 'evidence:' + mark.id + ' </p>'
 
                 L.marker(coor, {icon: evidenceIcon}).addTo(map).bindPopup(popUp)
