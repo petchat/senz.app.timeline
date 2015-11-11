@@ -38,7 +38,6 @@
     AV.initialize(userlocationId, userlocationKey)
 
 
-
     var AVConvertAdaptor = function (avObjects) {
         var promise = new AV.Promise()
         var points = []
@@ -135,7 +134,7 @@
         );
     };
 
-    var getUserLocation = function (uid, tsStart, tsEnd) {
+    var getAvUserLocation = function (uid, tsStart, tsEnd) {
         console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd)
 
         var promise = new AV.Promise()
@@ -159,6 +158,31 @@
             promise.resolve(result)
 
         })
+        return promise
+    }
+
+    var getMoUserLocation = function (uid, tsStart, tsEnd) {
+        var promise = new AV.Promise()
+
+
+        var where = 'filter[where][and][0][where][uid]=' + uid +
+                '&filter[where][and][1][timestamp][gt]=' + tsStart +
+                '&filter[where][and][2][timestamp][lt]=' + tsEnd
+
+        var fields = 'filter[fields][location]=true' +
+                '&filter[fields][timestamp]=true'
+
+        var path = 'http://119.254.111.40:3000/api/UserLocations?filter=' +
+                where + '&' + fields
+
+        $.getJSON(path, function (data) {
+            if (data) {
+                promise.resolve(data)
+            } else {
+                promise.reject('load failed:', path)
+            }
+        })
+
         return promise
     }
 
@@ -187,7 +211,7 @@
         return promise
     }
 
-    var getUPoiEvidences = function (upois) {
+    var getAvUPoiEvi = function (upois) {
         var promise = new AV.Promise()
         var marked_UserLocation = AV.Object.extend('marked_UserLocation')
 
@@ -201,6 +225,32 @@
         })
 
         return promise
+    }
+
+    var getMoUPoiEvi = function (upois) {
+
+        var promise = new AV.Promise()
+
+        var where = 'filter[where][and][0][where][uid]=' + uid
+
+        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' +
+                where
+
+        $.getJSON(path, function (data) {
+            if (data) {
+                promise.resolve(data)
+            } else {
+                promise.reject('load failed:', path)
+            }
+        })
+
+        return promise
+
+    }
+
+
+    var getUPoiEvidences = function (upois) {
+
     }
 
     var addEvidences = function (map, evidences) {
@@ -401,9 +451,9 @@
         'status: Arrive Workplace',
 
         '55b7a9a300b0df8ab5666093': '<b>u_poi info:</b> <br/>' +
-                "浦东国际机场, visit_frequency: 0.01",
+        "浦东国际机场, visit_frequency: 0.01",
         '55a5de61e4b0e11f62b2b948': '<b>u_poi info:</b> <br/>' +
-                "北京邮电大学, avg_duration: 5.1 hours"
+        "北京邮电大学, avg_duration: 5.1 hours"
     }
 
     var infogbupoiid = {
@@ -434,8 +484,45 @@
 
     var showAll = true
     var markByLocalFile = function () {
-        var taxiData = {"8618611791514": [], "8618601355436": [{"coor": {"lat": 39.907890896267, "lng": 116.429087456597}, "time": 1439812629.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810401.0}, {"coor": {"lat": 39.98981391059, "lng": 116.482019856771}, "time": 1439810400.0}, {"coor": {"lat": 39.989819335937, "lng": 116.482073296441}, "time": 1439810402.0}, {"coor": {"lat": 39.968089735243, "lng": 116.452643229167}, "time": 1439837101.0}, {"coor": {"lat": 39.914627549913, "lng": 116.434919433594}, "time": 1439835281.0}, {"coor": {"lat": 39.989807128906, "lng": 116.481958821615}, "time": 1439810400.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.968001844618, "lng": 116.452544759115}, "time": 1439837101.0}, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}], "8618611714839": [], "8618600010164": [], "8618600364585": [], "8618601357994": [], "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}], "8618618137687": [], "8618611186421": [], "8618612752474": []}
-
+        var taxiData = {
+            "8618611791514": [],
+            "8618601355436": [{
+                "coor": {"lat": 39.907890896267, "lng": 116.429087456597},
+                "time": 1439812629.0
+            }, {
+                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
+                "time": 1439810401.0
+            }, {
+                "coor": {"lat": 39.98981391059, "lng": 116.482019856771},
+                "time": 1439810400.0
+            }, {
+                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
+                "time": 1439810402.0
+            }, {
+                "coor": {"lat": 39.968089735243, "lng": 116.452643229167},
+                "time": 1439837101.0
+            }, {
+                "coor": {"lat": 39.914627549913, "lng": 116.434919433594},
+                "time": 1439835281.0
+            }, {
+                "coor": {"lat": 39.989807128906, "lng": 116.481958821615},
+                "time": 1439810400.0
+            }, {
+                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
+                "time": 1439837101.0
+            }, {
+                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
+                "time": 1439837101.0
+            }, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}],
+            "8618611714839": [],
+            "8618600010164": [],
+            "8618600364585": [],
+            "8618601357994": [],
+            "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}],
+            "8618618137687": [],
+            "8618611186421": [],
+            "8618612752474": []
+        }
 
 
     }
@@ -450,7 +537,7 @@
 
         getUserLocation(uid, tsStart, tsEnd).then(function (result) {
 
-            if(result === null || result.length == 0) {
+            if (result === null || result.length == 0) {
                 alert('No data!')
             }
 

@@ -27,13 +27,6 @@
 
 <script>
 
-    // senz.datasource.poi
-    //    AV.initialize('0lffhnvekj0ndyd8f1cgwabd71yi8vs2yjt1izp1xh7xu2jw', 'fescseluzujxchkh6gu7huzyato9f6be1fb73pysusbpnvv1')
-
-    // senz.log.tracer
-    //    AV.initialize('9ra69chz8rbbl77mlplnl4l2pxyaclm612khhytztl8b1f9o',
-    //            '1zohz2ihxp9dhqamhfpeaer8nh1ewqd9uephe9ztvkka544b')
-
     var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
     var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
 
@@ -131,7 +124,6 @@
         var raw = null
 
         _findAll(query).then(function (result) {
-
             raw = result
             var points = [];
             for (var i = 0; i < result.length; i++) {
@@ -145,22 +137,38 @@
                     raw[i].set('location', point)
                 }
 
-
                 promise.resolve(raw)
             })
         })
         return promise
     }
 
+    var getMOUPoiEvidence = function(upois) {
+        var promise = new AV.Promise()
+
+        var upoiids = []
+        for(var i=0; i<upois.length; i++) {
+            upoiids.push(upois.id)
+        }
+
+//        var where =  'filter[where][and][0][where][u_poi_id][inq]='
+        var where = '{"where": {"u_poi_id": {"inq": ' + JSON.stringify(upoiids) +'}}}'
+        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' + where
+
+        $.getJSON(path, function(data) {
+            if(data) {
+                promise.resolve(data)
+            } else {
+                promise.reject('load failed:', path)
+            }
+        })
+
+        return promise
+    }
+
     var getUserLocationMongo = function (uid, tsStart, tsEnd) {
         var promise = new AV.Promise()
-        
-        // http://119.254.111.40:3000/api/UserLocations?filter=
-        //  filter[where][and][0][uid]=5627226c00b09f851ff4a200
-        // &filter[where][and][1][timestamp][gt]=1446324297000f
-        // &filter[where][and][2][timestamp][lt]=1446341124000
-        // &filter[fields][location]=true
-        // &filter[fields][timestamp]=true
+
 
         var where =  'filter[where][and][0][where][uid]=' + uid +
                     '&filter[where][and][1][timestamp][gt]=' + tsStart +
@@ -201,17 +209,33 @@
 
         return promise
     }
-
-    var getUPoiEvidences = function (upois) {
+    
+    var getAVUPoiEvidence = function (upois) {
         var promise = new AV.Promise()
-        var marked_UserLocation = AV.Object.extend('marked_UserLocation')
+        var avMarkedUserLocation = AV.Object.extend('marked_UserLocation')
 
-        var query = new AV.Query(marked_UserLocation)
+        var query = new AV.Query(avMarkedUserLocation)
         query.containedIn('u_poi', upois)
         query.doesNotExist("u_poi_visit_log")
 
         _findAll(query).then(function (result) {
             promise.resolve(result)
+        })
+
+        return promise
+    }
+
+    var getUPoiEvidences = function (upois) {
+        var promise = new AV.Promise()
+
+        var ave = null
+        var moe = null
+        getAVUPoiEvidence(upois).then(function (data) {
+            ave = data
+            return getMOUPoiEvidence(upois)
+        }).then(function (data) {
+            moe = data
+            promise.resolve([ave, moe])
         })
 
         return promise

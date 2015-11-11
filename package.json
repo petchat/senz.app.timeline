@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "dependencies": {
     "express": "latest",
-    "ejs": "latest"
+    "ejs": "latest",
+    "mongoose": "latest"
   },
   "repository": {
     "type": "git",
