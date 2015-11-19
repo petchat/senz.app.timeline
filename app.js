@@ -4,6 +4,10 @@ var path = require('path')
 var app = express();
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema
+var AV = require('avoscloud-sdk')
+var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81'
+var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia'
+AV.initialize(timelineId, timelineKey)
 
 app.set('view engine', 'ejs');
 //app.use(express.static(__dirname + '../public'));
@@ -16,46 +20,31 @@ app.get('/hello', function (req, res) {
     res.render('hello', {message: 'Congrats, you just set up your app!'});
 });
 
-app.get('/uid/:uid/yesterday', function (req, res) {
-    var today = new Date()
-    var yesterday = new Date(today.setDate(today.getDate() - 1))
-    var startEnd = tsStartEnd(yesterday)
-
-    console.log('uid:', req.params.uid)
-
-    var data = {
-        'data': {
-            'tsStart': startEnd[0],
-            'tsEnd': startEnd[1],
-            'uid': req.params.uid
-        }
-    }
-
-    //res.sendfile(path.resolve(mapHtml))
-    res.render('new_map', data)
-});
-
-
 app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
 
     var date = new Date(req.params.datestr)
     var startEnd = tsStartEnd(date)
+    var tsStart = startEnd[0]
+    var tsEnd = startEnd[1]
+    var uid = req.params.uid
+    var showEvidence = req.params.show_evidence == 'true'
+    var convert = req.params.convert == 'true'
 
-    //due to strongloop problem, need to read data from backend then send to front
-
-    var data = {
-        'data': {
-            'tsStart': startEnd[0],
-            'tsEnd': startEnd[1],
-            'uid': req.params.uid,
-            'showEvidence': req.params.show_evidence == 'true',
-            'convert': req.params.convert == 'true'
+    getMoUserLocation(uid, tsStart, tsEnd).then(function (userLocation) {
+        console.log('backend got userLocations, length:', userLocation.length)
+        var data = {
+            'data': {
+                'tsStart': tsStart,
+                'tsEnd': tsEnd,
+                'uid': uid,
+                'showEvidence': showEvidence,
+                'convert': convert,
+                'userLocation': userLocation
+            }
         }
-    }
 
-    console.log(data)
-
-    res.render('new_map', data)
+        res.render('new_map', data)
+    })
 })
 
 
@@ -116,7 +105,6 @@ app.get('/basestation/date/:date', function (req, res) {
 
 })
 
-
 var server = app.listen(9111, '0.0.0.0', function () {
 
     var host = server.address().address
@@ -126,8 +114,9 @@ var server = app.listen(9111, '0.0.0.0', function () {
 });
 
 
+// DAO
+
 var tsStartEnd = function (date) {
-//        var start = _.clone(date)
     var start = new Date(date.getTime());
 
     start.setHours(0)
@@ -161,6 +150,17 @@ var getUPoiEvi = function (uid) {
     })
 
     return promise
+}
+
+var getMoUserLocation = function (uid, tsStart, tsEnd) {
+    where = {
+        timestamp: {$gt: tsStart, $lt: tsEnd},
+        user_id: uid
+    }
+
+    var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0})
+
+    return moGetAll(query, 0, [])
 }
 
 var getMoUPoiEvi = function (upois) {
@@ -197,60 +197,39 @@ var getAvUPoiEvi = function (upois) {
     })
 }
 
-var testfind = function () {
-
-    where = {u_poi_id: '563af44160b25a751b806488'}
-
-    MUL.find(where, function (err, data) {
-        console.log('err:', err)
-        console.log('data:', data)
-    })
-}
-
-var testall = function() {
-
-    var q = MUL.find().limit(2)
-    q.exec(function (e, d) {
-        console.log('e:', e)
-        console.log('d:', d)
-    })
-
-    var q = UL.find().limit(2)
-    q.exec(function (e, d) {
-        console.log('e:', e)
-        console.log('d:', d)
-    })
-    
-}
-
-//Lets connect to our database using the DB server URL.
 mongoose.connect('mongodb://senzhub:Senz2everyone@119.254.111.40/RefinedLog')
 
-/**
- * Lets define our Model for User entity. This model represents a collection in the database.
- * We define the possible schema of User document and data types of each field.
- * */
-//var User = mongoose.model('User', {name: String, roles: Array, age: Number})
-var MulSchema = {
-
+var MulSchema = new Schema({
     u_poi_id: String
-    //"user_location": {
-    //    "ref": "UserLocation",
-    //    type: Schema.Types.ObjectId
-    //},
-    //"u_poi_visit_id": String,
-    //"location": {
-    //    "lat": Number,
-    //    "lng": Number
-    //},
-    //"timestamp": Number
-}
+})
 
-var ULSchema = {
+var ULSchema = new Schema({
     'user_id': String
+})
+
+var MUL = mongoose.model('MarkedUserLocation', MulSchema, 'MarkedUserLocation')
+var UL = mongoose.model('UserLocation', ULSchema, 'UserLocation')
+
+var moGetAll = function (query) {
+
+    var limit = 100
+
+    var result = []
+
+    var _rec = function (query, skip) {
+        return query.skip(skip).exec(function (e, d) {
+            if (e) {
+                console.log('get all fucked', e)
+            } else {
+                if (d.length == 0) {
+                    return result
+                } else {
+                    result.push(d)
+                    return _rec(query, skip + limit)
+                }
+            }
+        })
+    }
+
+    return _rec(query, 0)
 }
-
-var MUL = mongoose.model('MarkedUserLocation', MulSchema)
-var UL = mongoose.model('UserLocation', ULSchema)
-
-testall()

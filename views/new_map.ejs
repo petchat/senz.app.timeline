@@ -32,11 +32,13 @@
             console.log('param from backend:', param)
 
     // DAO
-    var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
-    var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
+    //    var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
+    //    var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
+    var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81'
+    var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia'
 
-    AV.initialize(userlocationId, userlocationKey)
-
+    AV.initialize(timelineId, timelineKey)
+    console.log('av initialized')
 
     var AVConvertAdaptor = function (avObjects) {
         var promise = new AV.Promise()
@@ -44,17 +46,14 @@
         avObjects.forEach(function (avObject) {
             var loc = avObject.get('location')
             var point = {}
-            point.lat = loc.latitude
-            point.lng = loc.longitude
+            point.lat = loc.lat
+            point.lng = loc.lng
 
             points.push(point)
         })
 
-//        console.log('before convert points:', points)
 
         converter(points).then(function (result) {
-
-//            console.log('after convert points:', result)
 
             for (var i = 0; i < result.length; i++) {
 
@@ -161,30 +160,30 @@
         return promise
     }
 
-    var getMoUserLocation = function (uid, tsStart, tsEnd) {
-        var promise = new AV.Promise()
-
-
-        var where = 'filter[where][and][0][where][uid]=' + uid +
-                '&filter[where][and][1][timestamp][gt]=' + tsStart +
-                '&filter[where][and][2][timestamp][lt]=' + tsEnd
-
-        var fields = 'filter[fields][location]=true' +
-                '&filter[fields][timestamp]=true'
-
-        var path = 'http://119.254.111.40:3000/api/UserLocations?filter=' +
-                where + '&' + fields
-
-        $.getJSON(path, function (data) {
-            if (data) {
-                promise.resolve(data)
-            } else {
-                promise.reject('load failed:', path)
-            }
-        })
-
-        return promise
-    }
+    //    var getMoUserLocation = function (uid, tsStart, tsEnd) {
+    //        var promise = new AV.Promise()
+    //
+    //
+    //        var where = 'filter[where][and][0][where][uid]=' + uid +
+    //                '&filter[where][and][1][timestamp][gt]=' + tsStart +
+    //                '&filter[where][and][2][timestamp][lt]=' + tsEnd
+    //
+    //        var fields = 'filter[fields][location]=true' +
+    //                '&filter[fields][timestamp]=true'
+    //
+    //        var path = 'http://119.254.111.40:3000/api/UserLocations?filter=' +
+    //                where + '&' + fields
+    //
+    //        $.getJSON(path, function (data) {
+    //            if (data) {
+    //                promise.resolve(data)
+    //            } else {
+    //                promise.reject('load failed:', path)
+    //            }
+    //        })
+    //
+    //        return promise
+    //    }
 
     var getLogTrace = function (installationId, tsStart, tsEnd) {
         var promise = new AV.Promise()
@@ -193,7 +192,7 @@
 
     var getUPois = function (uid) {
         var promise = new AV.Promise()
-        var UPoi = AV.Object.extend('u_poi')
+        var UPoi = AV.Object.extend('UPoi')
         var User = AV.Object.extend('_User')
 
         var query = new AV.Query(UPoi)
@@ -243,15 +242,9 @@
                 promise.reject('load failed:', path)
             }
         })
-
         return promise
-
     }
 
-
-    var getUPoiEvidences = function (upois) {
-
-    }
 
     var addEvidences = function (map, evidences) {
 
@@ -264,20 +257,21 @@
         var evidenceIcon = new BMap.Icon(iconUri, new BMap.Size(16, 16));
 
         evidences.forEach(function (evidence) {
-            var loc = evidence.get('location')
-            var coor = [loc.latitude, loc.longitude]
-            var point = new BMap.Point(loc.longitude, loc.latitude)
+            var loc = evidence.location
+            // evidence is marked user location in mongo
+            var coor = [loc.lat, loc.lng]
+            var point = new BMap.Point(loc.lat, loc.lng)
 
             var marker = new BMap.Marker(point, {icon: evidenceIcon});  // 创建标注
-            var date = new Date(evidence.get('timestamp'))
+            var date = new Date(evidence.timestamp)
 
             marker.addEventListener('click', function (e) {
                 var html = '<p>' + 'Evidence info:' + '<br/>'
                         + date.toString() + '<br /> '
-                        + evidence.get('timestamp') + '<br/>'
+                        + evidence.timestamp + '<br/>'
                         + coor + '<br/>'
                         + "evidence.id:" + evidence.id + '<br/>'
-                        + "u_poi.id:" + evidence.get('u_poi').id + '</p>'
+                        + "u_poi.id:" + evidence.u_poi_id + '</p>'
 
                 this.openInfoWindow(new BMap.InfoWindow(html));
             })
@@ -328,32 +322,32 @@
         userLocations.forEach(function (userLocation) {
 
             if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
-                var loc = userLocation.get('location')
-                var coor = [loc.latitude, loc.longitude]
-                var point = new BMap.Point(loc.longitude, loc.latitude);
+                var loc = userLocation.location
+                var coor = [loc.lat, loc.lng]
+                var point = new BMap.Point(loc.lng, loc.lat);
                 var marker = new BMap.Marker(point);  // 创建标注
-                var date = new Date(userLocation.get('timestamp'))
+                var date = new Date(userLocation.timestamp)
 
                 marker.addEventListener("click", function (e) {
 
-                    if (userLocation.id in infoGbULID) {
+                    if (userLocation._id in infoGbULID) {
 
 
                         var info = infoGbULID[userLocation.id]
                         var html = '<p>' + info + '<br/>'
                                 + '<b>user location info:</b>' + '<br/>'
                                 + date.toString() + '<br /> '
-                                + userLocation.get('timestamp') + '<br/>'
+                                + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
-                                + userLocation.id + '</p>'
+                                + userLocation._id + '</p>'
 
                         this.openInfoWindow(new BMap.InfoWindow(html));
                     } else {
                         var html = '<p>' + 'user location info:' + '<br/>'
                                 + date.toString() + '<br /> '
-                                + userLocation.get('timestamp') + '<br/>'
+                                + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
-                                + userLocation.id + '</p>'
+                                + userLocation._id + '</p>'
 
                         this.openInfoWindow(new BMap.InfoWindow(html));
                     }
@@ -523,33 +517,25 @@
             "8618611186421": [],
             "8618612752474": []
         }
-
-
     }
 
-    var markByAVOS = function (uid, tsStart, tsEnd, plotClusterEvidence, needToConvert) {
+    var markByAVOS = function (uid, tsStart, tsEnd, userLocation, plotClusterEvidence, needToConvert) {
         console.log('start:', new Date(tsStart),
                 'end:', new Date(tsEnd),
                 'convert:', needToConvert,
                 'show evidence', plotClusterEvidence)
 
-        var centerLoc = null
+        var centerLoc = null;
 
-        getUserLocation(uid, tsStart, tsEnd).then(function (result) {
-
-            if (result === null || result.length == 0) {
-                alert('No data!')
-            }
-
+        (function() {
             if (needToConvert) {
-                return AVConvertAdaptor(result)
+                return AVConvertAdaptor(userLocation)
             } else {
-                return AV.Promise.as(result)
+                return AV.Promise.as(userLocation)
             }
+        }()).then(function (result) {
 
-        }).then(function (result) {
-
-            centerLoc = result[0].get('location')
+            centerLoc = result[0].location
             addUserLocation(map, result, infogbulid, [], showAll)
 
             return getUPois(uid)
@@ -581,12 +567,13 @@
         }).then(function (evidences) {
             console.log('evidences:', evidences)
             addEvidences(map, evidences)
-            map.centerAndZoom(new BMap.Point(centerLoc.longitude, centerLoc.latitude), 11);  // 初始化地图,设置中心点坐标和地图级别
+            // centerLoc is one of the user locations
+            map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 11);  // 初始化地图,设置中心点坐标和地图级别
         })
     }
 
     var myDis = new BMapLib.DistanceTool(map);
-
+    var userLocation = param['userLocation']
     var tsStart = param['tsStart']
     var tsEnd = param['tsEnd']
     var uid = param['uid']
@@ -602,6 +589,6 @@
     //        needConvert = true
     //    }
 
-    markByAVOS(uid, tsStart, tsEnd, showEvidence, needConvert)
+    markByAVOS(uid, tsStart, tsEnd, userLocation, showEvidence, needConvert)
 
 </script>
