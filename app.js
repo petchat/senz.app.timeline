@@ -1,5 +1,6 @@
 // 在 Cloud code 里初始化 Express 框架
 var express = require('express');
+var _ = require("underscore");
 var path = require('path')
 var app = express();
 var mongoose = require('mongoose');
@@ -28,10 +29,18 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
     var tsEnd = startEnd[1]
     var uid = req.params.uid
     var showEvidence = req.params.show_evidence == 'true'
-    var convert = req.params.convert == 'true'
+    var convert = req.params.convert == 'true';
 
-    getMoUserLocation(uid, tsStart, tsEnd).then(function (userLocation) {
-        console.log('backend got userLocations, length:', userLocation.length)
+    (function(){
+        var promises = [];
+        promises.push(getMoUserLocation(uid, tsStart, tsEnd))
+        promises.push(getAvUserEvent(uid, tsStart, tsEnd))
+        promises.push(getAvUserActivity(uid, tsStart, tsEnd))
+        promises.push(getAvHomeOfficeStatus(uid, tsStart, tsEnd))
+        return AV.Promise.all(promises);
+    })()
+        .then(function (results) {
+        //console.log('backend got userLocations, length:', userLocation.length)
         var data = {
             'data': {
                 'tsStart': tsStart,
@@ -39,7 +48,10 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
                 'uid': uid,
                 'showEvidence': showEvidence,
                 'convert': convert,
-                'userLocation': userLocation
+                'userLocation': results[0],
+                'userEvent': results[1],
+                'userActivity': results[2],
+                'homeOfficeStatus': results[3]
             }
         }
 
@@ -161,6 +173,77 @@ var getMoUserLocation = function (uid, tsStart, tsEnd) {
     var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0})
 
     return moGetAll(query, 0, [])
+}
+
+var _AvfindAll = function (query){
+    return query.count().then(
+        function (count){
+            var promises = [];
+            var pages    = Math.ceil(count/1000);
+            for (var i = 0; i <= pages; i ++){
+                var _query = _.clone(query);
+                _query.limit(1000);
+                _query.skip(i*1000);
+                promises.push(_query.find());
+            }
+            return AV.Promise.all(promises);
+        },
+        function (error){
+            return AV.Promise.error(error);
+        }
+    ).then(
+        function (results){
+            var rebuid_result = [];
+            results.forEach(function (result_list){
+                result_list.forEach(function (list_item){
+                    rebuid_result.push(list_item);
+                });
+            });
+            return AV.Promise.as(rebuid_result);
+        },
+        function (error){
+            return AV.Promise.error(error);
+        }
+    );
+};
+
+var getAvUserEvent = function(uid, tsStart, tsEnd){
+    //AV.initialize('pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81',
+    //    'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia',
+    //    'fxnfxlh16vdd3oc740y83tvaw4pohkk5w39y01axhsu2rhqt');
+    var UserEvent = AV.Object.extend("UserEvent");
+    var query = new AV.Query(UserEvent);
+    var user  = AV.Object.createWithoutData("_User", uid);
+    //query.lessThan("endTime", tsEnd/1000);
+    //query.greaterThan("startTime", tsStart/1000);
+    query.equalTo("user", user);
+    return _AvfindAll(query)
+}
+
+var getAvUserActivity = function(uid, tsStart, tsEnd){
+    //AV.initialize('pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81',
+    //    'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia',
+    //    'fxnfxlh16vdd3oc740y83tvaw4pohkk5w39y01axhsu2rhqt');
+    var UserActivity = AV.Object.extend("UserActivity");
+    var query = new AV.Query(UserActivity);
+    //var user  = AV.Object.createWithoutData("_User", uid);
+    //query.lessThan("endTime", tsEnd/1000);
+    //query.greaterThan("startTime", tsStart/1000);
+    query.equalTo("user_id", uid);
+    return _AvfindAll(query)
+}
+
+var getAvHomeOfficeStatus = function(uid, tsStart, tsEnd){
+    //AV.initialize('pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81',
+    //    'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia',
+    //    'fxnfxlh16vdd3oc740y83tvaw4pohkk5w39y01axhsu2rhqt');
+    var HomeOfficeStatus = AV.Object.extend("HomeOfficeStatus");
+    var query = new AV.Query(HomeOfficeStatus);
+    var user  = AV.Object.createWithoutData("_User", uid);
+    //query.lessThan("endTime", tsEnd/1000);
+    //query.greaterThan("startTime", tsStart/1000);
+    query.equalTo("user", user);
+    return _AvfindAll(query);
 }
 
 var getMoUPoiEvi = function (upois) {

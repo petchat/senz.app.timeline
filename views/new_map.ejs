@@ -329,10 +329,40 @@
                 var date = new Date(userLocation.timestamp)
 
                 marker.addEventListener("click", function (e) {
+                    var event_match = -1;
+                    var activity_match = -1;
+                    var home_office_match = -1;
+
+                    console.log(userEvent.length)
+                    userEvent.forEach(function (event, index){
+                        var evidence_list = event.evidence_list || [];
+                        evidence_list.forEach(function(evidence){
+                            if(userLocation._id == evidence.location_id){
+                                console.log('=============================');
+                                event_match = index;
+                            }
+                        })
+                    });
+
+                    userActivity.forEach(function (activity, index){
+                        var evidence_list = activity.evidence || [];
+//                        console.log(evidence_list);
+                        evidence_list.forEach(function(evidence){
+//                            console.log(userLocation._id);
+//                            console.log(evidence.location_id);
+                            if(userLocation._id == evidence.location_id){
+                                activity_match = index;
+                            }
+                        })
+                    });
+
+                    homeOfficeStatus.forEach(function (home_office, index){
+                        if(userLocation._id == home_office.user_location_id){
+                            home_office_match = index;
+                        }
+                    });
 
                     if (userLocation._id in infoGbULID) {
-
-
                         var info = infoGbULID[userLocation.id]
                         var html = '<p>' + info + '<br/>'
                                 + '<b>user location info:</b>' + '<br/>'
@@ -340,14 +370,53 @@
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
                                 + userLocation._id + '</p>'
-
+                        if(event_match >= 0){
+                            html +=
+                                '<p>'+ 'UserEvent: '  + '<br/>'
+                                + 'objectId: ' + userEvent[event_match].objectId + '<br>'
+                                + '</p>'
+                        }
+                        if(activity_match >= 0){
+                            html +=
+                                '<p>'+ 'UserActivity: '  + '<br/>'
+                                + 'objectId: ' + userActivity[activity_match].objectId + '<br>'
+                                + '</p>'
+                        }
+                        if(home_office_match >= 0){
+                            html +=
+                                '<p>'+ 'HomeOfficeStatus: ' + '<br>'
+                                + 'objectId: ' + homeOfficeStatus[home_office_match].objectId + '<br>'
+                                + 'status: ' + homeOfficeStatus[home_office_match].status
+                                + '</p>'
+                        }
                         this.openInfoWindow(new BMap.InfoWindow(html));
+
                     } else {
                         var html = '<p>' + 'user location info:' + '<br/>'
                                 + date.toString() + '<br /> '
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
                                 + userLocation._id + '</p>'
+
+                        if(event_match >= 0){
+                            html +=
+                                 '<p>'+ 'UserEvent: '  + '<br/>'
+                                 + 'objectId: ' + userEvent[event_match].objectId + '<br>'
+                                 + '</p>'
+                        }
+                        if(activity_match >= 0){
+                            html +=
+                                '<p>'+ 'UserActivity: '  + '<br/>'
+                                + 'objectId: ' + userActivity[activity_match].objectId + '<br>'
+                                + '</p>'
+                        }
+                        if(home_office_match >= 0){
+                            html +=
+                                '<p>'+ 'HomeOfficeStatus: ' + '<br>'
+                                + 'objectId: ' + homeOfficeStatus[home_office_match].objectId + '<br>'
+                                + 'status: ' + homeOfficeStatus[home_office_match].status
+                                + '</p>'
+                        }
 
                         this.openInfoWindow(new BMap.InfoWindow(html));
                     }
@@ -574,6 +643,9 @@
 
     var myDis = new BMapLib.DistanceTool(map);
     var userLocation = param['userLocation']
+    var userEvent = param['userEvent']
+    var userActivity = param['userActivity']
+    var homeOfficeStatus = param['homeOfficeStatus']
     var tsStart = param['tsStart']
     var tsEnd = param['tsEnd']
     var uid = param['uid']
