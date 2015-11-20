@@ -160,6 +160,24 @@
         return promise
     }
 
+    var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
+
+        var promise = new AV.Promise()
+
+        var HomeOfficeStatus = AV.Object.extend('HomeOfficeStatus')
+        var User = AV.Object.extend('_User')
+
+        var query = new AV.Query(HomeOfficeStatus)
+        var up = new User()
+        up.id =  uid
+
+        query.equalTo('user', up)
+        query.greaterThanOrEqualTo('timestamp', tsStart)
+        query.lessThanOrEqualTo('timestamp', tsEnd)
+
+        return _findAll(query)
+    }
+
     //    var getMoUserLocation = function (uid, tsStart, tsEnd) {
     //        var promise = new AV.Promise()
     //
@@ -522,6 +540,8 @@
     var markByAVOS = function (uid, tsStart, tsEnd, userLocation, plotClusterEvidence, needToConvert) {
         console.log('start:', new Date(tsStart),
                 'end:', new Date(tsEnd),
+                'tsStart:', tsStart,
+                'tsEnd:', tsEnd,
                 'convert:', needToConvert,
                 'show evidence', plotClusterEvidence)
 
@@ -534,6 +554,9 @@
                 return AV.Promise.as(userLocation)
             }
         }()).then(function (result) {
+            if(result.length == 0) {
+                alert('no data')
+            }
 
             centerLoc = result[0].location
             addUserLocation(map, result, infogbulid, [], showAll)
