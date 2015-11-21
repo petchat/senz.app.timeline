@@ -29,7 +29,7 @@
 <script type="text/javascript">
 
     param = <%- JSON.stringify(data) %>
-            console.log('param from backend:', param)
+    console.log('param from backend:', param)
 
     // DAO
     //    var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
@@ -319,49 +319,64 @@
             alert('user has no location data within time range')
         }
 
-        userLocations.forEach(function (userLocation) {
+        var iconblue = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
+        var iconyellow = new BMap.Icon('/images/flag_yellow.png', new BMap.Size(32, 44));
+        var icongreen = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
 
+        event_match.length = 0
+        activity_match.length = 0
+        home_office_match.length = 0
+        event_location_id.length = 0
+        activity_location_id.length = 0
+        home_office_location_id.length = 0;
+
+        var test = []
+        userLocations.forEach(function (userLocation) {
             if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
                 var loc = userLocation.location
                 var coor = [loc.lat, loc.lng]
                 var point = new BMap.Point(loc.lng, loc.lat);
-                var marker = new BMap.Marker(point);  // 创建标注
+
+                userEvent.forEach(function (event, index){
+                    var evidence_list = event.evidence_list || [];
+                    evidence_list.forEach(function(evidence){
+                        if(userLocation.objectId == evidence.location_id){
+                            event_match.push(index);
+                            event_location_id.push(userLocation._id);
+                        }
+                    })
+                });
+
+                userActivity.forEach(function (activity, index){
+                    var evidence_list = activity.evidence || [];
+                    evidence_list.forEach(function(evidence){
+                        if(userLocation._id == evidence.location_id){
+                            activity_match.push(index);
+                            activity_location_id.push(userLocation._id);
+                        }
+                    })
+                });
+
+                homeOfficeStatus.forEach(function (home_office, index){
+                    if(userLocation._id == home_office.user_location_id){
+                        home_office_match.push(index);
+                        home_office_location_id.push(userLocation._id);
+                    }
+                });
+
+                var marker = new BMap.Marker(point);
+
+                if(activity_location_id.indexOf(userLocation._id) >= 0){
+                    marker = new BMap.Marker(point, {icon: iconblue})
+                }else if(home_office_location_id.indexOf(userLocation._id) >= 0){
+                    marker = new BMap.Marker(point, {icon: iconyellow})
+                }else if(event_location_id.indexOf(userLocation._id) >= 0){
+                    marker = new BMap.Marker(point, {icon: icongreen});
+                }
+
                 var date = new Date(userLocation.timestamp)
 
                 marker.addEventListener("click", function (e) {
-                    var event_match = -1;
-                    var activity_match = -1;
-                    var home_office_match = -1;
-
-                    console.log(userEvent.length)
-                    userEvent.forEach(function (event, index){
-                        var evidence_list = event.evidence_list || [];
-                        evidence_list.forEach(function(evidence){
-                            if(userLocation._id == evidence.location_id){
-                                console.log('=============================');
-                                event_match = index;
-                            }
-                        })
-                    });
-
-                    userActivity.forEach(function (activity, index){
-                        var evidence_list = activity.evidence || [];
-//                        console.log(evidence_list);
-                        evidence_list.forEach(function(evidence){
-//                            console.log(userLocation._id);
-//                            console.log(evidence.location_id);
-                            if(userLocation._id == evidence.location_id){
-                                activity_match = index;
-                            }
-                        })
-                    });
-
-                    homeOfficeStatus.forEach(function (home_office, index){
-                        if(userLocation._id == home_office.user_location_id){
-                            home_office_match = index;
-                        }
-                    });
-
                     if (userLocation._id in infoGbULID) {
                         var info = infoGbULID[userLocation.id]
                         var html = '<p>' + info + '<br/>'
@@ -370,56 +385,42 @@
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
                                 + userLocation._id + '</p>'
-                        if(event_match >= 0){
-                            html +=
-                                '<p>'+ 'UserEvent: '  + '<br/>'
-                                + 'objectId: ' + userEvent[event_match].objectId + '<br>'
-                                + '</p>'
-                        }
-                        if(activity_match >= 0){
-                            html +=
-                                '<p>'+ 'UserActivity: '  + '<br/>'
-                                + 'objectId: ' + userActivity[activity_match].objectId + '<br>'
-                                + '</p>'
-                        }
-                        if(home_office_match >= 0){
-                            html +=
-                                '<p>'+ 'HomeOfficeStatus: ' + '<br>'
-                                + 'objectId: ' + homeOfficeStatus[home_office_match].objectId + '<br>'
-                                + 'status: ' + homeOfficeStatus[home_office_match].status
-                                + '</p>'
-                        }
-                        this.openInfoWindow(new BMap.InfoWindow(html));
-
                     } else {
                         var html = '<p>' + 'user location info:' + '<br/>'
                                 + date.toString() + '<br /> '
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
                                 + userLocation._id + '</p>'
-
-                        if(event_match >= 0){
-                            html +=
-                                 '<p>'+ 'UserEvent: '  + '<br/>'
-                                 + 'objectId: ' + userEvent[event_match].objectId + '<br>'
-                                 + '</p>'
-                        }
-                        if(activity_match >= 0){
-                            html +=
-                                '<p>'+ 'UserActivity: '  + '<br/>'
-                                + 'objectId: ' + userActivity[activity_match].objectId + '<br>'
-                                + '</p>'
-                        }
-                        if(home_office_match >= 0){
-                            html +=
-                                '<p>'+ 'HomeOfficeStatus: ' + '<br>'
-                                + 'objectId: ' + homeOfficeStatus[home_office_match].objectId + '<br>'
-                                + 'status: ' + homeOfficeStatus[home_office_match].status
-                                + '</p>'
-                        }
-
-                        this.openInfoWindow(new BMap.InfoWindow(html));
                     }
+
+                    if(event_location_id.indexOf(userLocation._id) >= 0){
+                        var index = event_location_id.indexOf(userLocation._id)
+                        html +=
+                            '<p>'+ 'UserEvent: '  + '<br/>'
+                            + 'objectId: ' + userEvent[event_match[index]].objectId + '<br>'
+                            + 'Event: ' + Object.keys(userEvent[event_match[index]].event)[0]
+                            + '</p>'
+                    }
+                    if(activity_location_id.indexOf(userLocation._id) >= 0){
+                        var index = activity_location_id.indexOf(userLocation._id)
+                        html +=
+                            '<p>'+ 'UserActivity: '  + '<br/>'
+                            + 'objectId: ' + userActivity[activity_match[index]].objectId + '<br>'
+                            + 'category: ' + userActivity[activity_match[index]].matched_activities[0].category + '<br>'
+                            + 'name: ' + userActivity[activity_match[index]].matched_activities[0].name + '<br>'
+                            + 'event_id: ' + userActivity[activity_match[index]].matched_activities[0].event_id + '<br>'
+                            + '</p>'
+                    }
+
+                    if(home_office_location_id.indexOf(userLocation._id) >= 0){
+                        var index = home_office_location_id.indexOf(userLocation._id)
+                        html +=
+                            '<p>'+ 'HomeOfficeStatus: ' + '<br>'
+                            + 'objectId: ' + homeOfficeStatus[home_office_match[index]].objectId + '<br>'
+                            + 'status: ' + homeOfficeStatus[home_office_match[index]].status
+                            + '</p>'
+                    }
+                    this.openInfoWindow(new BMap.InfoWindow(html));
                 });
 
                 markers.push(marker)
@@ -652,6 +653,12 @@
     var host = param['host']
     var showEvidence = param['showEvidence']
     var needConvert = param['convert']
+    var event_match = [];
+    var event_location_id = [];
+    var activity_match = [];
+    var activity_location_id = [];
+    var home_office_match = [];
+    var home_office_location_id = [];
 
     console.log('uid:', uid)
     console.log('tsinghua:', tsinghua)
