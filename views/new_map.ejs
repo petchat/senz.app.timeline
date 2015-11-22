@@ -328,6 +328,33 @@
         })
     }
 
+    var addIconLegend = function(map, x, y, icon, text){
+
+        function ZoomControl(){
+            this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
+            this.defaultOffset = new BMap.Size(x, y);
+        }
+
+        ZoomControl.prototype = new BMap.Control();
+        ZoomControl.prototype.initialize = function(map){
+            var div = document.createElement("div");
+            var img = document.createElement("img")
+            var txt = document.createElement("label")
+            img.setAttribute('src', icon);
+            txt.textContent = text;
+            txt.setAttribute('style', "font-size: 32px")
+            div.appendChild(img);
+            div.appendChild(txt);
+
+            map.getContainer().appendChild(div);
+            return div;
+        }
+
+        var myZoomCtrl = new ZoomControl();
+
+        map.addControl(myZoomCtrl);
+    };
+
     // END OF DAO
     var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
         var markers = []
@@ -340,6 +367,10 @@
         var iconblue = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
         var iconyellow = new BMap.Icon('/images/flag_yellow.png', new BMap.Size(32, 44));
         var icongreen = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
+
+        addIconLegend(map, 10, 10, '/images/flag_blue.png', 'Activity');
+        addIconLegend(map, 10, 60, '/images/flag_yellow.png', 'HomeOffice');
+        addIconLegend(map, 10, 110, '/images/flag_green.png', 'Event');
 
         event_match.length = 0
         activity_match.length = 0
