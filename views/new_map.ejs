@@ -347,6 +347,7 @@
         event_location_id.length = 0
         activity_location_id.length = 0
         home_office_location_id.length = 0;
+        var index = -1;
 
         var test = []
         userLocations.forEach(function (userLocation) {
@@ -384,11 +385,13 @@
 
                 var marker = new BMap.Marker(point);
 
-                if(activity_location_id.indexOf(userLocation._id) >= 0){
+                if((index = activity_location_id.indexOf(userLocation._id)) >= 0){
                     marker = new BMap.Marker(point, {icon: iconblue})
-                }else if(home_office_location_id.indexOf(userLocation._id) >= 0){
+                }else if((index = home_office_location_id.indexOf(userLocation._id)) >= 0 &&
+                        homeOfficeStatus[home_office_match[index]].status != 'unknown_status'){
                     marker = new BMap.Marker(point, {icon: iconyellow})
-                }else if(event_location_id.indexOf(userLocation._id) >= 0){
+                }else if((index = event_location_id.indexOf(userLocation._id)) >= 0
+                        && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
                     marker = new BMap.Marker(point, {icon: icongreen});
                 }
 
@@ -411,16 +414,15 @@
                                 + userLocation._id + '</p>'
                     }
 
-                    if(event_location_id.indexOf(userLocation._id) >= 0){
-                        var index = event_location_id.indexOf(userLocation._id)
+                    if((index = event_location_id.indexOf(userLocation._id)) >= 0
+                            && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
                         html +=
                             '<p>'+ 'UserEvent: '  + '<br/>'
                             + 'objectId: ' + userEvent[event_match[index]].objectId + '<br>'
                             + 'Event: ' + Object.keys(userEvent[event_match[index]].event)[0]
                             + '</p>'
                     }
-                    if(activity_location_id.indexOf(userLocation._id) >= 0){
-                        var index = activity_location_id.indexOf(userLocation._id)
+                    if((index = activity_location_id.indexOf(userLocation._id)) >= 0){
                         html +=
                             '<p>'+ 'UserActivity: '  + '<br/>'
                             + 'objectId: ' + userActivity[activity_match[index]].objectId + '<br>'
@@ -430,8 +432,8 @@
                             + '</p>'
                     }
 
-                    if(home_office_location_id.indexOf(userLocation._id) >= 0){
-                        var index = home_office_location_id.indexOf(userLocation._id)
+                    if((index = home_office_location_id.indexOf(userLocation._id)) >= 0
+                       && homeOfficeStatus[home_office_match[index]].status != 'unknown_status'){
                         html +=
                             '<p>'+ 'HomeOfficeStatus: ' + '<br>'
                             + 'objectId: ' + homeOfficeStatus[home_office_match[index]].objectId + '<br>'

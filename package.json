@@ -4,7 +4,9 @@
   "dependencies": {
     "express": "latest",
     "ejs": "latest",
-    "mongoose": "latest"
+    "mongoose": "latest",
+    "underscore": "latest",
+    "avoscloud-sdk": "latest"
   },
   "repository": {
     "type": "git",
