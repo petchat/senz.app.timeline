@@ -467,7 +467,7 @@
                        && homeOfficeStatus[home_office_match[index]].status != 'unknown_status'){
                         html +=
                             '<p>'+ 'HomeOfficeStatus: ' + '<br>'
-                            + 'objectId: ' + homeOfficeStatus[home_office_match[index]].objectId + '<br>'
+                            + 'objectId: ' + homeOfficeStatus[home_office_match[index]]._id + '<br>'
                             + 'status: ' + homeOfficeStatus[home_office_match[index]].status
                             + '</p>'
                     }

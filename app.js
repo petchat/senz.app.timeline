@@ -31,14 +31,12 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
     var showEvidence = req.params.show_evidence == 'true'
     var convert = req.params.convert == 'true';
 
-    (function () {
-        var promises = [];
-        promises.push(getMoUserLocation(uid, tsStart, tsEnd))
-        promises.push(getAvUserEvent(uid, tsStart, tsEnd))
-        promises.push(getAvUserActivity(uid, tsStart, tsEnd))
-        promises.push(getAvHomeOfficeStatus(uid, tsStart, tsEnd))
-        return AV.Promise.all(promises);
-    })()
+    var promises = [];
+    promises.push(getMoUserLocation(uid, tsStart, tsEnd));
+    promises.push(getAvUserEvent(uid, tsStart, tsEnd));
+    promises.push(getAvUserActivity(uid, tsStart, tsEnd));
+    promises.push(getMoHomeOfficeStatus(uid, tsStart, tsEnd));
+    return AV.Promise.all(promises)
         .then(function (results) {
             //console.log('backend got userLocations, length:', userLocation.length)
             var data = {
@@ -235,7 +233,19 @@ var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
     query.greaterThan("timestamp", tsStart);
     query.equalTo("user", user);
     return _AvfindAll(query);
-}
+};
+
+var getMoHomeOfficeStatus = function(uid, tsStart, tsEnd){
+    var where = {
+        timestamp: {$gt: tsStart},
+        expire: {$lt: tsEnd},
+        user_id: uid
+    };
+
+    var query = HO.find(where);
+
+    return moGetAll(query, 0, []);
+};
 
 var getMoUPoiEvi = function (upois) {
     var promise = new AV.Promise()
@@ -275,14 +285,19 @@ mongoose.connect('mongodb://senzhub:Senz2everyone@119.254.111.40/RefinedLog')
 
 var MulSchema = new Schema({
     u_poi_id: String
-})
+});
 
 var ULSchema = new Schema({
     'user_id': String
-})
+});
 
-var MUL = mongoose.model('MarkedUserLocation', MulSchema, 'MarkedUserLocation')
-var UL = mongoose.model('UserLocation', ULSchema, 'UserLocation')
+var HOSchema = new Schema({
+    'user_id': String
+});
+
+var MUL = mongoose.model('MarkedUserLocation', MulSchema, 'MarkedUserLocation');
+var UL = mongoose.model('UserLocation', ULSchema, 'UserLocation');
+var HO = mongoose.model('HomeOfficeStatus', HOSchema, 'HomeOfficeStatus');
 
 var moGetAll = function (query) {
 
@@ -306,32 +321,4 @@ var moGetAll = function (query) {
     }
 
     return _rec(query, 0)
-}
-
-var testdate = function (uid, tsStart, tsEnd) {
-    var UserActivity = AV.Object.extend('UserEvent')
-    var q = new AV.Query(UserActivity)
-
-    var d1 = new Date(tsStart)
-    var d2 = new Date(tsEnd)
-
-    console.log(d1, d2)
-
-    var user = AV.Object.createWithoutData("_User", uid);
-
-    //q.lessThan("end_datetime", new Date(tsEnd));
-    //q.greaterThan("start_datetime", new Date(tsStart));
-    q.equalTo("user", user);
-
-    //q.equalTo("user_id", uid);
-    //q.greaterThan('time_range_start', d1)
-    //q.lessThan('time_range_end', d2)
-
-    q.find().then(function (d) {
-        console.log(d)
-        console.log(d.length)
-    })
-
-}
-
-//testdate('5588d20be4b0dc547bacb2ce', 1446998400000, 1447084800000)
+};
