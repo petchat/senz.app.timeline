@@ -31,15 +31,35 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
     var showEvidence = req.params.show_evidence == 'true'
     var convert = req.params.convert == 'true';
 
-    (function () {
-        var promises = [];
-        promises.push(getMoUserLocation(uid, tsStart, tsEnd))
-        promises.push(getAvUserEvent(uid, tsStart, tsEnd))
-        promises.push(getAvUserActivity(uid, tsStart, tsEnd))
-        promises.push(getAvHomeOfficeStatus(uid, tsStart, tsEnd))
-        return AV.Promise.all(promises);
-    })()
-        .then(function (results) {
+    var userLocation = null;
+    var userEvent = null;
+    var userActivity = null;
+    //var homeOfficeStatus = null;
+
+    //(function () {
+    //    var promises = [];
+        //promises.push(getMoUserLocation(uid, tsStart, tsEnd))
+
+        getMoUserLocation(uid, tsStart, tsEnd).then(function (userLocations) {
+            userLocation = userLocations
+            return getAvUserEvent(uid, tsStart, tsEnd)
+        }).then(function (userEvents) {
+            userEvent = userEvents
+            return getAvUserActivity(uid, tsStart, tsEnd)
+        }).then(function (userActivitys) {
+            userActivity = userActivitys
+            return getAvHomeOfficeStatus(uid, tsStart, tsEnd)
+        })
+
+
+
+        //promises.push(getAvUserEvent(uid, tsStart, tsEnd))
+        //promises.push(getAvUserActivity(uid, tsStart, tsEnd))
+        //promises.push(getAvHomeOfficeStatus(uid, tsStart, tsEnd))
+        //return AV.Promise.all(promises);
+    //})()
+        .then(function (homeOfficeStatus) {
+            //homeOfficeStatus = homeOfficeStatus
             //console.log('backend got userLocations, length:', userLocation.length)
             var data = {
                 'data': {
@@ -48,10 +68,14 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
                     'uid': uid,
                     'showEvidence': showEvidence,
                     'convert': convert,
-                    'userLocation': results[0],
-                    'userEvent': results[1],
-                    'userActivity': results[2],
-                    'homeOfficeStatus': results[3]
+                    //'userLocation': results[0],
+                    //'userEvent': results[1],
+                    //'userActivity': results[2],
+                    //'homeOfficeStatus': results[3]
+                    'userLocation': userLocation,
+                    'userEvent': userEvent,
+                    'userActivity': userActivity,
+                    'homeOfficeStatus': homeOfficeStatus
                 }
             }
 
