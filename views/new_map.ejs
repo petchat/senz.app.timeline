@@ -447,10 +447,12 @@
 
                     if((index = event_location_id.indexOf(userLocation._id)) >= 0
                             && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
-                        html +=
+                        var event = userEvent[event_match[index]].isOnSubway ? "contextTakingSubway"
+                                : Object.keys(userEvent[event_match[index]].event)[0]
+                                html +=
                             '<p>'+ 'UserEvent: '  + '<br/>'
                             + 'objectId: ' + userEvent[event_match[index]].objectId + '<br>'
-                            + 'Event: ' + Object.keys(userEvent[event_match[index]].event)[0]
+                            + 'Event: ' + event
                             + '</p>'
                     }
                     if((index = activity_location_id.indexOf(userLocation._id)) >= 0){
