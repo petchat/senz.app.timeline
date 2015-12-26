@@ -56,12 +56,27 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
 
 
 app.get('/trace/uid/:uid', function(req, res){
-    var data = {
-        'data': {
-            'uid': req.params.uid
-        }
-    };
-    res.render('trace_map', data);
+    var uid = req.params.uid;
+    return getAvHomeOfficeUtrace(uid)
+        .then(function(results) {
+            //console.log(results[0]._serverData);
+            var level = {"best": 1, "good": 2, "ok": 3};
+            var label_level = 5, trace = null;
+            results.forEach(function (obj) {
+                if (level[obj._serverData.handed_label] < label_level) {
+                    label_level = level[obj._serverData.handed_label];
+                    trace = obj._serverData.trace;
+                }
+            });
+            var data = {
+                'data': {
+                    'trace': trace,
+                    'handed_label': label_level == 1 ? "best": label_level == 2
+                        ? "good" : label_level == 3 ? "ok" : "other"
+                }
+            };
+            res.render('trace_map', data);
+        });
 });
 
 
@@ -220,7 +235,15 @@ var getAvUserEvent = function (uid, tsStart, tsEnd) {
     query.greaterThan("start_datetime", new Date(tsStart));
     query.equalTo("user", user);
     return _AvfindAll(query)
-}
+};
+
+var getAvHomeOfficeUtrace = function(uid){
+    var HomeOfficeUtrace = AV.Object.extend("HomeOfficeUtrace");
+    var query = new AV.Query(HomeOfficeUtrace);
+    var user = AV.Object.createWithoutData("_User", uid);
+    query.equalTo("user", user);
+    return _AvfindAll(query);
+};
 
 var getAvUserActivity = function (uid, tsStart, tsEnd) {
     var UserActivity = AV.Object.extend("UserActivity");
