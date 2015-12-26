@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <style type="text/css">
+        body, html, #allmap {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+    <script type="text/javascript" src="../public/scripts/underscore-min.js"></script>
+
+    <script src="../public/scripts/av-0.5.1.min.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bHbEGIEzXaATRk08GLSZSGUA"></script>
+    <script type="text/javascript" src="../public/scripts/convertor.js"></script>
+    <script type="text/javascript"
+            src="../public/scripts/DistanceTool_min.js"></script>
+    <title>地图展示</title>
+</head>
+<body>
+<div id="allmap"></div>
+<input type="button" value="开启" onclick="myDis.open()"/>
+<input type="button" value="关闭" onclick="myDis.close()"/>
+</body>
+<script>
+    param = <%- JSON.stringify(data) %>
+    console.log('param from backend:', param)
+
+    var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81'
+    var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia'
+
+    AV.initialize(timelineId, timelineKey)
+    console.log('av initialized')
+
+    var map = new BMap.Map("allmap");
+    map.addControl(new BMap.MapTypeControl());
+    map.enableScrollWheelZoom(true);
+    var point = new BMap.Point(116.404, 39.915);
+    map.centerAndZoom(point, 15);
+</script>
+</html>

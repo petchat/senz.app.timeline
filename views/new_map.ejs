@@ -367,10 +367,12 @@
         var iconblue = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
         var iconyellow = new BMap.Icon('/images/flag_yellow.png', new BMap.Size(32, 44));
         var icongreen = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
+        var iconsubway = new BMap.Icon('/images/subway.png', new BMap.Size(32, 44));
 
         addIconLegend(map, 10, 10, '/images/flag_blue.png', 'Activity');
         addIconLegend(map, 10, 60, '/images/flag_yellow.png', 'HomeOffice');
         addIconLegend(map, 10, 110, '/images/flag_green.png', 'Event');
+        addIconLegend(map, 10, 160, '/images/subway.png', 'Subway');
 
         event_match.length = 0
         activity_match.length = 0
@@ -423,7 +425,11 @@
                     marker = new BMap.Marker(point, {icon: iconyellow})
                 }else if((index = event_location_id.indexOf(userLocation._id)) >= 0
                         && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
-                    marker = new BMap.Marker(point, {icon: icongreen});
+                    if(userEvent[event_match[index]].isOnSubway){
+                        marker = new BMap.Marker(point, {icon: iconsubway});
+                    }else{
+                        marker = new BMap.Marker(point, {icon: icongreen});
+                    }
                 }
 
                 var date = new Date(userLocation.timestamp)

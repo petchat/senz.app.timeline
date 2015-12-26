@@ -10,7 +10,6 @@ var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia';
 AV.initialize(timelineId, timelineKey);
 
 app.set('view engine', 'ejs');
-//app.use(express.static(__dirname + '../public'));
 app.use(express.static(__dirname + '/public'));
 
 var mapHtml = 'cloud/views/new_map.ejs';
@@ -37,7 +36,6 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
     promises.push(getMoHomeOfficeStatus(uid, tsStart, tsEnd));
     return AV.Promise.all(promises)
         .then(function (results) {
-            //console.log('backend got userLocations, length:', userLocation.length)
             var data = {
                 'data': {
                     'tsStart': tsStart,
@@ -54,6 +52,16 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
 
             res.render('new_map', data)
         })
+});
+
+
+app.get('/trace/uid/:uid', function(req, res){
+    var data = {
+        'data': {
+            'uid': req.params.uid
+        }
+    };
+    res.render('trace_map', data);
 });
 
 
