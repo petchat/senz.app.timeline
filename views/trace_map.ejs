@@ -40,11 +40,22 @@
     var point = new BMap.Point(trace[trace.length/2][0], trace[trace.length/2][1]);
     map.centerAndZoom(point, 15);
 
-    var iconUri = '/images/flag_blue.png'
-    var traceIcon = new BMap.Icon(iconUri, new BMap.Size(32, 44));
+    //draw line
+    var points = [];
     param.trace.forEach(function(loc){
+        points.push(new BMap.Point(loc[0], loc[1]));
+    })
+    var polyline = new BMap.Polyline(points, {strokeStyle:"solid",strokeWeight:3,strokeColor:"#f00",strokeOpacity:1});
+    map.addOverlay(polyline);
+
+    //draw point
+    var BlueIcon = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
+    var RedIcon = new BMap.Icon('/images/flag_red.png', new BMap.Size(32, 44));
+    var GreenIcon = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
+    param.trace.forEach(function(loc, index){
+        var icon = index == 0 ? RedIcon: index == param.trace.length -1 ? GreenIcon : BlueIcon;
         var point = new BMap.Point(loc[0], loc[1]);
-        var marker = new BMap.Marker(point, {icon: traceIcon});
+        var marker = new BMap.Marker(point, {icon: icon});
         map.addOverlay(marker);
     });
 </script>
