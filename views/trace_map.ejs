@@ -24,39 +24,87 @@
 <input type="button" value="关闭" onclick="myDis.close()"/>
 </body>
 <script>
-    param = <%- JSON.stringify(data) %>
+    var AVInit = function(){
+        var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81'
+        var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia'
+
+        AV.initialize(timelineId, timelineKey)
+        console.log('av initialized')
+    };
+
+    var MapInit = function(){
+        var map = new BMap.Map("allmap");
+        map.addControl(new BMap.MapTypeControl());
+        map.enableScrollWheelZoom(true);
+        var trace = param.trace;
+        var point = new BMap.Point(trace[trace.length/2][0], trace[trace.length/2][1]);
+        map.centerAndZoom(point, 14);
+
+        return map;
+    };
+
+    var addIconLegend = function(map, x, y, icon, text){
+
+        function ZoomControl(){
+            this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
+            this.defaultOffset = new BMap.Size(x, y);
+        }
+
+        ZoomControl.prototype = new BMap.Control();
+        ZoomControl.prototype.initialize = function(map){
+            var div = document.createElement("div");
+            var img = document.createElement("img")
+            var txt = document.createElement("label")
+            img.setAttribute('src', icon);
+            txt.textContent = text;
+            txt.setAttribute('style', "font-size: 32px")
+            div.appendChild(img);
+            div.appendChild(txt);
+
+            map.getContainer().appendChild(div);
+            return div;
+        }
+
+        var myZoomCtrl = new ZoomControl();
+        map.addControl(myZoomCtrl);
+    };
+
+    var drawLine = function(map, locations){
+        //draw line
+        var points = [];
+        locations.forEach(function(loc){
+            points.push(new BMap.Point(loc[0], loc[1]));
+        })
+        var polyline = new BMap.Polyline(points, {strokeStyle:"solid",strokeWeight:3,strokeColor:"#f00",strokeOpacity:1});
+        map.addOverlay(polyline);
+    };
+
+    var drawPoint = function(map, locations){
+        //draw point
+        var BlueIcon = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
+        var RedIcon = new BMap.Icon('/images/flag_red.png', new BMap.Size(32, 44));
+        var GreenIcon = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
+        locations.forEach(function(loc, index){
+            var icon = index == 0 ? RedIcon: index == locations.length -1 ? GreenIcon : BlueIcon;
+            var point = new BMap.Point(loc[0], loc[1]);
+            var marker = new BMap.Marker(point, {icon: icon});
+            marker.addEventListener("click", function(e){
+                var html = "<p>" + "lng: " + loc[0] + "; lat: " + loc[1] + "</p>";
+                this.openInfoWindow(new BMap.InfoWindow(html));
+            });
+            map.addOverlay(marker);
+        });
+    };
+
+    var param = <%- JSON.stringify(data) %>
     console.log('param from backend:', param)
 
-    var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81'
-    var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia'
+    AVInit();
+    var map = MapInit();
+    drawPoint(map, param.trace);
+    drawLine(map, param.trace);
+    addIconLegend(map, 10, 10, '/images/flag_red.png', 'Home');
+    addIconLegend(map, 10, 60, '/images/flag_green.png', 'Office');
 
-    AV.initialize(timelineId, timelineKey)
-    console.log('av initialized')
-
-    var map = new BMap.Map("allmap");
-    map.addControl(new BMap.MapTypeControl());
-    map.enableScrollWheelZoom(true);
-    var trace = param.trace;
-    var point = new BMap.Point(trace[trace.length/2][0], trace[trace.length/2][1]);
-    map.centerAndZoom(point, 14);
-
-    //draw line
-    var points = [];
-    param.trace.forEach(function(loc){
-        points.push(new BMap.Point(loc[0], loc[1]));
-    })
-    var polyline = new BMap.Polyline(points, {strokeStyle:"solid",strokeWeight:3,strokeColor:"#f00",strokeOpacity:1});
-    map.addOverlay(polyline);
-
-    //draw point
-    var BlueIcon = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
-    var RedIcon = new BMap.Icon('/images/flag_red.png', new BMap.Size(32, 44));
-    var GreenIcon = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
-    param.trace.forEach(function(loc, index){
-        var icon = index == 0 ? RedIcon: index == param.trace.length -1 ? GreenIcon : BlueIcon;
-        var point = new BMap.Point(loc[0], loc[1]);
-        var marker = new BMap.Marker(point, {icon: icon});
-        map.addOverlay(marker);
-    });
 </script>
 </html>
