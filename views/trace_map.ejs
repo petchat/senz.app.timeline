@@ -69,6 +69,9 @@
         map.addControl(myZoomCtrl);
     };
 
+    var calcRotation = function(loc_s, loc_e){
+        return Math.atan((loc_e.lat-loc_s.lat) / (loc_e.lng - loc_s.lng)) * 180 / 3.141592654
+    };
 
     var drawUTrace = function(map, trace, home, office, color){
         var points = [];
@@ -85,10 +88,15 @@
         map.addOverlay(home_marker);
         points.push(new BMap.Point(home.location.lng, home.location.lat));
 
+        var pre_loc = home.location;
         trace.forEach(function(loc){
             var point = new BMap.Point(loc.lng, loc.lat);
             points.push(point);
             var marker = new BMap.Marker(point, {icon: BlueIcon});
+            var a = calcRotation(pre_loc, loc);
+            console.log(a);
+            marker.setRotation(90 - a);
+            pre_loc = loc;
             marker.addEventListener("click", function(){
                 var html = "<p>" + "lng: " + loc.lng + "; lat: " + loc.lat + "<br>"
                          + "evi_id: " + loc.evi_id + "</p>";
