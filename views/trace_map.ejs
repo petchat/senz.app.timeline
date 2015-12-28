@@ -55,11 +55,11 @@
             var img = document.createElement("img")
             var txt = document.createElement("label")
             img.setAttribute('src', icon);
+            img.onclick = callback;
             txt.textContent = text;
             txt.setAttribute('style', "font-size: 32px")
             div.appendChild(img);
             div.appendChild(txt);
-            div.onclick = callback();
 
             map.getContainer().appendChild(div);
             return div;
@@ -117,9 +117,11 @@
     AVInit();
     var map = MapInit();
     addIconLegend(map, 10, 10, '/images/flag_red.png', 'Home', function(){
+        map.clearOverlays();
         drawUTrace(map, param.trace_ho, param.home_ho, param.office_ho, "#f00");
     });
     addIconLegend(map, 10, 60, '/images/flag_green.png', 'Office', function(){
+        map.clearOverlays();
         drawUTrace(map, param.trace_oh, param.home_oh, param.office_oh, "#008000");
     });
 
