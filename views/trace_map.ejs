@@ -36,15 +36,14 @@
         var map = new BMap.Map("allmap");
         map.addControl(new BMap.MapTypeControl());
         map.enableScrollWheelZoom(true);
-        var trace = param.trace;
-        var point = new BMap.Point(trace[trace.length/2][0], trace[trace.length/2][1]);
+        var trace = param.trace_ho;
+        var point = new BMap.Point(trace[trace.length/2].lng, trace[trace.length/2].lat);
         map.centerAndZoom(point, 14);
 
         return map;
     };
 
-    var addIconLegend = function(map, x, y, icon, text){
-
+    var addIconLegend = function(map, x, y, icon, text, callback){
         function ZoomControl(){
             this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
             this.defaultOffset = new BMap.Size(x, y);
@@ -60,6 +59,7 @@
             txt.setAttribute('style', "font-size: 32px")
             div.appendChild(img);
             div.appendChild(txt);
+            div.onclick = callback();
 
             map.getContainer().appendChild(div);
             return div;
@@ -69,31 +69,46 @@
         map.addControl(myZoomCtrl);
     };
 
-    var drawLine = function(map, locations){
-        //draw line
-        var points = [];
-        locations.forEach(function(loc){
-            points.push(new BMap.Point(loc[0], loc[1]));
-        })
-        var polyline = new BMap.Polyline(points, {strokeStyle:"solid",strokeWeight:3,strokeColor:"#f00",strokeOpacity:1});
-        map.addOverlay(polyline);
-    };
 
-    var drawPoint = function(map, locations){
-        //draw point
+    var drawUTrace = function(map, trace, home, office, color){
+        var points = [];
         var BlueIcon = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
         var RedIcon = new BMap.Icon('/images/flag_red.png', new BMap.Size(32, 44));
         var GreenIcon = new BMap.Icon('/images/flag_green.png', new BMap.Size(32, 44));
-        locations.forEach(function(loc, index){
-            var icon = index == 0 ? RedIcon: index == locations.length -1 ? GreenIcon : BlueIcon;
-            var point = new BMap.Point(loc[0], loc[1]);
-            var marker = new BMap.Marker(point, {icon: icon});
-            marker.addEventListener("click", function(e){
-                var html = "<p>" + "lng: " + loc[0] + "; lat: " + loc[1] + "</p>";
+
+        var home_marker = new BMap.Marker(new BMap.Point(home.location.lng, home.location.lat), {icon: RedIcon});
+        home_marker.addEventListener("click", function(){
+            var html = "<p>" + "lng: " + home.location.lng + "; lat: " + home.location.lat + "<br>"
+                    + "upoi_visit_log_id: " + home.upoi_visit_log_id + "</p>";
+            this.openInfoWindow(new BMap.InfoWindow(html));
+        });
+        map.addOverlay(home_marker);
+        points.push(new BMap.Point(home.location.lng, home.location.lat));
+
+        trace.forEach(function(loc){
+            var point = new BMap.Point(loc.lng, loc.lat);
+            points.push(point);
+            var marker = new BMap.Marker(point, {icon: BlueIcon});
+            marker.addEventListener("click", function(){
+                var html = "<p>" + "lng: " + loc.lng + "; lat: " + loc.lat + "<br>"
+                         + "evi_id: " + loc.evi_id + "</p>";
                 this.openInfoWindow(new BMap.InfoWindow(html));
             });
             map.addOverlay(marker);
         });
+
+
+        var office_marker = new BMap.Marker(new BMap.Point(office.location.lng, office.location.lat), {icon: GreenIcon});
+        office_marker.addEventListener("click", function(){
+            var html = "<p>" + "lng: " + office.location.lng + "; lat: " + office.location.lat + "<br>"
+                    + "upoi_visit_log_id: " + office.upoi_visit_log_id + "</p>";
+            this.openInfoWindow(new BMap.InfoWindow(html));
+        });
+        map.addOverlay(office_marker);
+        points.push(new BMap.Point(office.location.lng, office.location.lat));
+
+        var polyline = new BMap.Polyline(points, {strokeStyle:"solid",strokeWeight:3,strokeColor:color,strokeOpacity:1});
+        map.addOverlay(polyline);
     };
 
     var param = <%- JSON.stringify(data) %>
@@ -101,10 +116,12 @@
 
     AVInit();
     var map = MapInit();
-    drawPoint(map, param.trace);
-    drawLine(map, param.trace);
-    addIconLegend(map, 10, 10, '/images/flag_red.png', 'Home');
-    addIconLegend(map, 10, 60, '/images/flag_green.png', 'Office');
+    addIconLegend(map, 10, 10, '/images/flag_red.png', 'Home', function(){
+        drawUTrace(map, param.trace_ho, param.home_ho, param.office_ho, "#f00");
+    });
+    addIconLegend(map, 10, 60, '/images/flag_green.png', 'Office', function(){
+        drawUTrace(map, param.trace_oh, param.home_oh, param.office_oh, "#008000");
+    });
 
 </script>
 </html>

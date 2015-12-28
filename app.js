@@ -59,20 +59,36 @@ app.get('/trace/uid/:uid', function(req, res){
     var uid = req.params.uid;
     return getAvHomeOfficeUtrace(uid)
         .then(function(results) {
-            //console.log(results[0]._serverData);
             var level = {"best": 1, "good": 2, "ok": 3};
-            var label_level = 5, trace = null;
+            var label_level_ho = 5, trace_ho = null, home_ho=null, office_ho=null;
+            var label_level_oh = 5,trace_oh = null, home_oh = null, office_oh = null;
             results.forEach(function (obj) {
-                if (level[obj._serverData.handed_label] < label_level) {
-                    label_level = level[obj._serverData.handed_label];
-                    trace = obj._serverData.trace;
+                if (obj._serverData.trace_label == "H2O" && level[obj._serverData.handed_label] < label_level_ho) {
+                    label_level_ho = level[obj._serverData.handed_label];
+                    trace_ho = obj._serverData.trace;
+                    home_ho = obj._serverData.home;
+                    office_ho = obj._serverData.office;
+                }
+                if (obj._serverData.trace_label == "O2H" && level[obj._serverData.handed_label] < label_level_oh) {
+                    label_level_oh = level[obj._serverData.handed_label];
+                    trace_oh = obj._serverData.trace.reverse();
+                    home_oh = obj._serverData.home;
+                    office_oh = obj._serverData.office;
                 }
             });
             var data = {
                 'data': {
-                    'trace': trace,
-                    'handed_label': label_level == 1 ? "best": label_level == 2
-                        ? "good" : label_level == 3 ? "ok" : "other"
+                    'trace_ho': trace_ho,
+                    'home_ho': home_ho,
+                    'office_ho': office_ho,
+
+                    'trace_oh': trace_oh,
+                    'home_oh': home_oh,
+                    'office_oh': office_oh,
+                    'handed_label_ho': label_level_ho == 1 ? "best": label_level_ho == 2
+                        ? "good" : label_level_ho == 3 ? "ok" : "other",
+                    'handed_label_oh': label_level_oh == 1 ? "best": label_level_oh == 2
+                        ? "good" : label_level_oh == 3 ? "ok" : "other"
                 }
             };
             res.render('trace_map', data);
