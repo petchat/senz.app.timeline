@@ -81,7 +81,8 @@
 
         var home_marker = new BMap.Marker(new BMap.Point(home.location.lng, home.location.lat), {icon: RedIcon});
         home_marker.addEventListener("click", function(){
-            var html = "<p>" + "lng: " + home.location.lng + "; lat: " + home.location.lat + "<br>"
+            var html = "<p>" + "<strong>HOME: </strong>" + "<br>"
+                    + "lng: " + home.location.lng + "; lat: " + home.location.lat + "<br>"
                     + "upoi_visit_log_id: " + home.upoi_visit_log_id + "</p>";
             this.openInfoWindow(new BMap.InfoWindow(html));
         });
@@ -108,7 +109,8 @@
 
         var office_marker = new BMap.Marker(new BMap.Point(office.location.lng, office.location.lat), {icon: GreenIcon});
         office_marker.addEventListener("click", function(){
-            var html = "<p>" + "lng: " + office.location.lng + "; lat: " + office.location.lat + "<br>"
+            var html = "<p>" + "<strong>OFFICE: </strong>" + "<br>"
+                    + "lng: " + office.location.lng + "; lat: " + office.location.lat + "<br>"
                     + "upoi_visit_log_id: " + office.upoi_visit_log_id + "</p>";
             this.openInfoWindow(new BMap.InfoWindow(html));
         });
