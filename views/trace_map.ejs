@@ -70,7 +70,7 @@
     };
 
     var calcRotation = function(loc_s, loc_e){
-        return Math.atan((loc_e.lat-loc_s.lat) / (loc_e.lng - loc_s.lng)) * 180 / 3.141592654
+        return loc_e.lng == loc_s.lng ? 90 : Math.atan((loc_e.lat-loc_s.lat) / (loc_e.lng - loc_s.lng)) * 180 / 3.141592654
     };
 
     var drawUTrace = function(map, trace, home, office, color){
@@ -95,7 +95,7 @@
             var marker = new BMap.Marker(point, {icon: BlueIcon});
             var a = calcRotation(pre_loc, loc);
             console.log(a);
-            marker.setRotation(90 - a);
+            marker.setRotation(90 + a);
             pre_loc = loc;
             marker.addEventListener("click", function(){
                 var html = "<p>" + "lng: " + loc.lng + "; lat: " + loc.lat + "<br>"
