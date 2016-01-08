@@ -382,7 +382,7 @@
 
         var test = []
         userLocations.forEach(function (userLocation) {
-            if (ulIds.indexOf(userLocation.id) > -1 || showAll) {
+            if (ulIds.indexOf(userLocation._id) > -1 || showAll) {
                 var loc = userLocation.location
                 var coor = [loc.lat, loc.lng]
                 var point = new BMap.Point(loc.lng, loc.lat);
@@ -390,7 +390,7 @@
                 userEvent.forEach(function (event, index){
                     var evidence_list = event.evidence_list || [];
                     evidence_list.forEach(function(evidence){
-                        if(userLocation.objectId == evidence.location_id){
+                        if(userLocation._id == evidence.location_id){
                             event_match.push(index);
                             event_location_id.push(userLocation._id);
                         }
@@ -435,14 +435,14 @@
                 marker.addEventListener("click", function (e) {
                     if (userLocation._id in infoGbULID) {
                         var info = infoGbULID[userLocation.id]
-                        var html = '<p>' + info + '<br/>'
+                        html = '<p>' + info + '<br/>'
                                 + '<b>user location info:</b>' + '<br/>'
                                 + date.toString() + '<br /> '
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
                                 + userLocation._id + '</p>'
                     } else {
-                        var html = '<p>' + 'user location info:' + '<br/>'
+                        html = '<p>' + 'user location info:' + '<br/>'
                                 + date.toString() + '<br /> '
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
@@ -453,7 +453,7 @@
                             && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
                         var event = userEvent[event_match[index]].isOnSubway ? "contextTakingSubway"
                                 : Object.keys(userEvent[event_match[index]].event)[0]
-                                html +=
+                        html +=
                             '<p>'+ 'UserEvent: '  + '<br/>'
                             + 'objectId: ' + userEvent[event_match[index]].objectId + '<br>'
                             + 'Event: ' + event

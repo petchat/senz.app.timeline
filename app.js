@@ -95,7 +95,6 @@ app.get('/trace/uid/:uid', function(req, res){
         });
 });
 
-
 app.get('/uid/:uid/range/:ts_start/:ts_end', function (req, res) {
 
     var data = {
@@ -200,17 +199,6 @@ var getUPoiEvi = function (uid) {
     return promise
 }
 
-var getMoUserLocation = function (uid, tsStart, tsEnd) {
-    where = {
-        timestamp: {$gt: tsStart, $lt: tsEnd},
-        user_id: uid
-    }
-
-    var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0})
-
-    return moGetAll(query, 0, [])
-}
-
 var _AvfindAll = function (query) {
     return query.count().then(
         function (count) {
@@ -243,6 +231,27 @@ var _AvfindAll = function (query) {
     );
 };
 
+var getMoUserLocation = function (uid, tsStart, tsEnd) {
+    var where = {
+        timestamp: {$gt: tsStart, $lt: tsEnd},
+        user_id: uid
+    };
+
+    var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0});
+
+    return moGetAll(query, 0, [])
+};
+
+var getMoUserEvent = function (uid, tsStart, tsEnd) {
+    var where = {
+        timestamp: {$gt: tsStart, $lt: tsEnd},
+        user_id: uid
+    };
+
+    var query = UE.find(where);
+    return moGetAll(query, 0, [])
+};
+
 var getAvUserEvent = function (uid, tsStart, tsEnd) {
     var UserEvent = AV.Object.extend("UserEvent");
     var query = new AV.Query(UserEvent);
@@ -269,7 +278,7 @@ var getAvUserActivity = function (uid, tsStart, tsEnd) {
     query.greaterThan("time_range_start", new Date(tsStart));
     query.equalTo("user_id", uid);
     return _AvfindAll(query)
-}
+};
 
 var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
     var HomeOfficeStatus = AV.Object.extend("HomeOfficeStatus");
@@ -343,6 +352,7 @@ var HOSchema = new Schema({
 
 var MUL = mongoose.model('MarkedUserLocation', MulSchema, 'MarkedUserLocation');
 var UL = mongoose.model('UserLocation', ULSchema, 'UserLocation');
+var UE = mongoose.model('UserEvent', ULSchema, 'UserEvent');
 var HO = mongoose.model('HomeOfficeStatus', HOSchema, 'HomeOfficeStatus');
 
 var moGetAll = function (query) {
