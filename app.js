@@ -294,7 +294,8 @@ var getMoHomeOfficeStatus = function(uid, tsStart, tsEnd){
     var where = {
         timestamp: {$gt: tsStart},
         expire: {$lt: tsEnd},
-        user_id: uid
+        user_id: uid,
+        algo_type: "offline"
     };
 
     var query = HO.find(where);
