@@ -16,7 +16,7 @@ var mapHtml = 'cloud/views/new_map.ejs';
 
 // 使用 Express 路由 API 服务 /hello 的 HTTP GET 请求
 app.get('/hello', function (req, res) {
-    res.render('hello', {message: 'Congrats, you just set up your app!'});
+    res.json({hello:'ok'});
 });
 
 app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
@@ -162,7 +162,6 @@ var server = app.listen(9111, '0.0.0.0', function () {
 
 
 // DAO
-
 var tsStartEnd = function (date) {
     var start = new Date(date.getTime());
 
