@@ -17,47 +17,103 @@
         <div class="col-xs-2">
             <form>
                 <div class="form-group">
-                    <label for="">开始时间</label>
+                    <label>开始时间</label>
                     <input type="date" class="form-control" id="startTimeInput" placeholder="请选择" value="<%= date %>">
                 </div>
                 <div class="form-group">
-                    <label for="">结束时间</label>
+                    <label>结束时间</label>
                     <input type="date" class="form-control" id="endTimeInput" placeholder="请选择" value="<%= date %>">
                 </div>
                 <div class="form-group">
-                    <label for="">查找用户</label>
+                    <label>查找用户</label>
                     <input type="text" class="form-control" id="userIdInput" placeholder="请输入用户ID">
                 </div>
                 <button type="button" class="btn btn-default btn-primary btn-block" id="searchButton">查询</button>
             </form>
         </div>
         <div class="col-xs-10">
-            <table class="table table-striped">
-                <thead>
-                <tr>
-                    <th>时间</th>
-                    <th>城市</th>
-                    <th>密码</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>Tanmay</td>
-                    <td>Bangalore</td>
-                    <td>560001</td>
-                </tr>
-                <tr>
-                    <td>Sachin</td>
-                    <td>Mumbai</td>
-                    <td>400003</td>
-                </tr>
-                <tr>
-                    <td>Uma</td>
-                    <td>Pune</td>
-                    <td>411027</td>
-                </tr>
-                </tbody>
-            </table>
+            <label>查看的数据库</label>
+
+            <div>
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="logCheckbox" value="logDiv" checked> 日志数据库
+                </label>
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="locationCheckbox" value="locationDiv" checked> 位置数据库
+                </label>
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="labelCheckbox" value="labelDiv" checked> 标签数据库
+                </label>
+            </div>
+            <div class="panel panel-default" id="logDiv">
+                <div class="panel-heading">
+                    日志数据库
+                </div>
+                <div class="panel-body">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>数量</th>
+                            <th>详情</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Tanmay</td>
+                            <td>Bangalore</td>
+                            <td>560001</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel panel-default" id="locationDiv">
+                <div class="panel-heading">
+                    位置数据库
+                </div>
+                <div class="panel-body">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>数量</th>
+                            <th>详情</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Tanmay</td>
+                            <td>Bangalore</td>
+                            <td>560001</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel panel-default" id="labelDiv">
+                <div class="panel-heading">
+                    标签数据库
+                </div>
+                <div class="panel-body">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>数量</th>
+                            <th>详情</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Tanmay</td>
+                            <td>Bangalore</td>
+                            <td>560001</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -92,6 +148,19 @@
                 }
             });
         });
+        // 不同数据库显示
+        $('#logCheckbox').change(changeTableShowOrHiden);
+        $('#locationCheckbox').change(changeTableShowOrHiden);
+        $('#labelCheckbox').change(changeTableShowOrHiden);
     });
+
+    function changeTableShowOrHiden() {
+        if ($(this).is(':checked')) {
+            $('#' + $(this).val()).removeClass('hidden');
+        } else {
+            $('#' + $(this).val()).addClass('hidden');
+        }
+    }
+
 </script>
 </html>
