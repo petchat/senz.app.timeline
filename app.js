@@ -1,5 +1,6 @@
 // 在 Cloud code 里初始化 Express 框架
 var express = require('express');
+var bodyParser = require("body-parser");
 var _ = require("underscore");
 var app = express();
 var mongoose = require('mongoose');
@@ -11,12 +12,31 @@ AV.initialize(timelineId, timelineKey);
 
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
+app.use(bodyParser.urlencoded({ extended: false }));
 
 var mapHtml = 'cloud/views/new_map.ejs';
 
 // 使用 Express 路由 API 服务 /hello 的 HTTP GET 请求
 app.get('/hello', function (req, res) {
-    res.json({hello:'ok'});
+    res.json({
+        DateTime: new Date().toLocaleString(),
+        Date: new Date().toLocaleDateString(),
+        Time: new Date().toLocaleTimeString()
+    });
+});
+
+app.get('/index', function (req, res) {
+    var data = {
+        date: new Date().toLocaleDateString(),
+        users: ['user0', 'user1', 'user2']
+    };
+    res.render('index', data);
+});
+
+app.get('/query', function (req, res) {
+    var reqJson = {startTime: req.query.startTime, endTime: req.query.endTime, userId: req.query.userId};
+    console.log(reqJson);
+    res.json(reqJson);
 });
 
 app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
@@ -50,18 +70,18 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
                 }
             };
 
-            res.render('new_map', data)
+            res.render('new_map', data);
         })
 });
 
 
-app.get('/trace/uid/:uid', function(req, res){
+app.get('/trace/uid/:uid', function (req, res) {
     var uid = req.params.uid;
     return getAvHomeOfficeUtrace(uid)
-        .then(function(results) {
+        .then(function (results) {
             var level = {"best": 1, "good": 2, "ok": 3};
-            var label_level_ho = 5, trace_ho = null, home_ho=null, office_ho=null;
-            var label_level_oh = 5,trace_oh = null, home_oh = null, office_oh = null;
+            var label_level_ho = 5, trace_ho = null, home_ho = null, office_ho = null;
+            var label_level_oh = 5, trace_oh = null, home_oh = null, office_oh = null;
             results.forEach(function (obj) {
                 if (obj._serverData.trace_label == "H2O" && level[obj._serverData.handed_label] < label_level_ho) {
                     label_level_ho = level[obj._serverData.handed_label];
@@ -85,9 +105,9 @@ app.get('/trace/uid/:uid', function(req, res){
                     'trace_oh': trace_oh,
                     'home_oh': home_oh,
                     'office_oh': office_oh,
-                    'handed_label_ho': label_level_ho == 1 ? "best": label_level_ho == 2
+                    'handed_label_ho': label_level_ho == 1 ? "best" : label_level_ho == 2
                         ? "good" : label_level_ho == 3 ? "ok" : "other",
-                    'handed_label_oh': label_level_oh == 1 ? "best": label_level_oh == 2
+                    'handed_label_oh': label_level_oh == 1 ? "best" : label_level_oh == 2
                         ? "good" : label_level_oh == 3 ? "ok" : "other"
                 }
             };
@@ -152,7 +172,7 @@ app.get('/basestation/date/:date', function (req, res) {
 
 });
 
-var server = app.listen(9111, '0.0.0.0', function () {
+var server = app.listen(9111, 'localhost', function () {
 
     var host = server.address().address;
     var port = server.address().port;
@@ -261,7 +281,7 @@ var getAvUserEvent = function (uid, tsStart, tsEnd) {
     return _AvfindAll(query)
 };
 
-var getAvHomeOfficeUtrace = function(uid){
+var getAvHomeOfficeUtrace = function (uid) {
     var HomeOfficeUtrace = AV.Object.extend("HomeOfficeUtrace");
     var query = new AV.Query(HomeOfficeUtrace);
     var user = AV.Object.createWithoutData("_User", uid);
@@ -289,7 +309,7 @@ var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
     return _AvfindAll(query);
 };
 
-var getMoHomeOfficeStatus = function(uid, tsStart, tsEnd){
+var getMoHomeOfficeStatus = function (uid, tsStart, tsEnd) {
     var where = {
         timestamp: {$gt: tsStart},
         expire: {$lt: tsEnd},

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>首页</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="scripts/jquery.min.js"></script>
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="scripts/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-2">
+            <form>
+                <div class="form-group">
+                    <label for="">开始时间</label>
+                    <input type="date" class="form-control" id="startTimeInput" placeholder="请选择" value="<%= date %>">
+                </div>
+                <div class="form-group">
+                    <label for="">结束时间</label>
+                    <input type="date" class="form-control" id="endTimeInput" placeholder="请选择" value="<%= date %>">
+                </div>
+                <div class="form-group">
+                    <label for="">查找用户</label>
+                    <input type="text" class="form-control" id="userIdInput" placeholder="请输入用户ID">
+                </div>
+                <button type="button" class="btn btn-default btn-primary btn-block" id="searchButton">查询</button>
+            </form>
+        </div>
+        <div class="col-xs-10">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>城市</th>
+                    <th>密码</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Tanmay</td>
+                    <td>Bangalore</td>
+                    <td>560001</td>
+                </tr>
+                <tr>
+                    <td>Sachin</td>
+                    <td>Mumbai</td>
+                    <td>400003</td>
+                </tr>
+                <tr>
+                    <td>Uma</td>
+                    <td>Pune</td>
+                    <td>411027</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    var url = '/query';
+    var startTime, endTime, userId;
+    $(document).ready(function () {
+        $('#searchButton').click(function () {
+            // 获取参数
+            startTime = $('#startTimeInput').val();
+            endTime = $('#endTimeInput').val();
+            userId = $('#userIdInput').val();
+            // 构造参数
+            var data = {
+                startTime: startTime,
+                endTime: endTime,
+                userId: userId
+            }
+            console.log(JSON.stringify(data));
+            // 请求数据
+            $.ajax({
+                url: url,
+                async: false,
+                type: 'GET',
+                data: data,
+                success: function (data) {
+                    console.log(JSON.stringify(data));
+                },
+                error: function (data) {
+                    console.log(JSON.stringify(data));
+                }
+            });
+        });
+    });
+</script>
+</html>

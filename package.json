@@ -6,7 +6,8 @@
     "ejs": "latest",
     "mongoose": "latest",
     "underscore": "latest",
-    "avoscloud-sdk": "latest"
+    "avoscloud-sdk": "latest",
+    "body-parser": "latest"
   },
   "repository": {
     "type": "git",
