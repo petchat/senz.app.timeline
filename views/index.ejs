@@ -4,25 +4,24 @@
     <title>首页</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <!-- 新 Bootstrap 核心 CSS 文件 -->
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
-    <script src="scripts/jquery.min.js"></script>
-    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
-    <script src="scripts/bootstrap.min.js"></script>
 </head>
 <body>
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-2">
             <form>
+                <!--<div class="form-group">-->
+                <!--<label>开始时间</label>-->
+                <!--<input type="date" class="form-control" id="startDateInput" placeholder="请选择" value="<%= date %>">-->
+                <!--</div>-->
+                <!--<div class="form-group">-->
+                <!--<label>结束时间</label>-->
+                <!--<input type="date" class="form-control" id="endDateInput" placeholder="请选择" value="<%= date %>">-->
+                <!--</div>-->
                 <div class="form-group">
-                    <label>开始时间</label>
-                    <input type="date" class="form-control" id="startDateInput" placeholder="请选择" value="<%= date %>">
-                </div>
-                <div class="form-group">
-                    <label>结束时间</label>
-                    <input type="date" class="form-control" id="endDateInput" placeholder="请选择" value="<%= date %>">
+                    <label>选择日期</label>
+                    <input type="date" class="form-control" id="startDateInput" placeholder="请选择"
+                           value="<%= date %>">
                 </div>
                 <div class="form-group">
                     <label>查找用户</label>
@@ -53,22 +52,9 @@
                     Log DB
                 </div>
                 <div class="panel-body">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>数量</th>
-                            <th>详情</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>Tanmay</td>
-                            <td>Bangalore</td>
-                            <td>560001</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                    <div id="logChartDiv" style="height:400px;">
+
+                    </div>
                 </div>
             </div>
             <div class="panel panel-default" id="userLocationDiv">
@@ -76,22 +62,6 @@
                     UserLocation DB
                 </div>
                 <div class="panel-body">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>数量</th>
-                            <th>详情</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>Tanmay</td>
-                            <td>Bangalore</td>
-                            <td>560001</td>
-                        </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
             <div class="panel panel-default" id="userMotionDiv">
@@ -99,22 +69,6 @@
                     UserMotion DB
                 </div>
                 <div class="panel-body">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>数量</th>
-                            <th>详情</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>Tanmay</td>
-                            <td>Bangalore</td>
-                            <td>560001</td>
-                        </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
             <div class="panel panel-default" id="userEventDiv">
@@ -122,36 +76,30 @@
                     UserEvent DB
                 </div>
                 <div class="panel-body">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>数量</th>
-                            <th>详情</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>Tanmay</td>
-                            <td>Bangalore</td>
-                            <td>560001</td>
-                        </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 </body>
+<!-- 新 Bootstrap 核心 CSS 文件 -->
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+<script src="scripts/jquery.min.js"></script>
+<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+<script src="scripts/bootstrap.min.js"></script>
+<!-- 引入 ECharts 文件 -->
+<script src="scripts/echarts.min.js"></script>
 <script>
     var url = '/query';
     var startDate, endDate, userId;
+    var logChart = echarts.init(document.getElementById('logChartDiv'));
     $(document).ready(function () {
         $('#searchButton').click(function () {
             // 获取参数
-            startDate = $('#startDateInput').val();
-            endDate = $('#endDateInput').val();
+//            startDate = $('#startDateInput').val();
+//            endDate = $('#endDateInput').val();
+            startDate = endDate = $('#startDateInput').val();
             userId = $('#userIdInput').val();
             // 构造参数
             var data = {
@@ -168,10 +116,9 @@
                 data: data,
                 success: function (data) {
                     console.log(JSON.stringify(data));
+                    loadLogChartData(data);
                 },
-                error: function (data) {
-                    console.log(JSON.stringify(data));
-                }
+                error: errorAlert
             });
         });
         // 不同数据库显示
@@ -181,6 +128,10 @@
         $('#userEventCheckbox').change(changeTableShowOrHiden);
     });
 
+    function errorAlert(error) {
+        alert('请求失败!\n' + JSON.stringify(error));
+    }
+
     function changeTableShowOrHiden() {
         if ($(this).is(':checked')) {
             $('#' + $(this).val()).removeClass('hidden');
@@ -189,5 +140,39 @@
         }
     }
 
+    function loadLogChartData(data) {
+        logChart.setOption({
+            tooltip: {
+                formatter: '{c}'
+            },
+            legend: {
+                data: data.category
+            },
+            xAxis: {
+                name: '时间',
+                data: data.xAxis
+            },
+            yAxis: {
+                name: '数量'
+            },
+            series: [{
+                name: 'location',
+                type: 'line',
+                data: data.location
+            }, {
+                name: 'sensor',
+                type: 'line',
+                data: data.sensor
+            }, {
+                name: 'motion',
+                type: 'line',
+                data: data.motion
+            }, {
+                name: 'other',
+                type: 'line',
+                data: data.other
+            }]
+        });
+    }
 </script>
 </html>

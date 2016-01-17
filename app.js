@@ -45,12 +45,54 @@ app.get('/query', function (req, res) {
     var endDate = req.query.endDate;
     var userId = req.query.userId;
     // 处理参数
-    var TSArray = getTS(new Date(startDate), new Date(endDate));
-    var startTS = TSArray[0];
-    var endTS = TSArray[1];
-    console.log('startTS:' + startTS + '|endTS:' + endTS);
-    // 返回数据
-    res.json({startTS: startTS, endTS: endTS, userId: userId});
+    startDate += ' 00:00:00';
+    endDate += ' 23:59:59';
+    // 请求数据
+    getLog(userId, startDate, endDate, function (result) {
+        console.log('location.length:' + result.location.length);
+        console.log('sensor.length:' + result.sensor.length);
+        console.log('motion.length:' + result.motion.length);
+        console.log('other.length:' + result.other.length);
+
+        var data = {
+            category: ['location', 'sensor', 'motion', 'other'],
+            xAxis: [],
+            location: [],
+            sensor: [],
+            motion: [],
+            other: []
+        };
+        // timeline赋值
+        // TODO 待完善
+        for (var i = 0; i <= 23; i++) {
+            var t = (i < 10 ? '0' + i : '' + i);
+            data.xAxis.push(t);
+            data.location.push(0);
+            data.sensor.push(0);
+            data.motion.push(0);
+            data.other.push(0);
+        }
+        // 时间切分
+        for (var i = 0; i < result.location.length; i++) {
+            var hour = new Date(result.location[i].time).getHours();
+            data.location[hour]++;
+        }
+        for (var i = 0; i < result.sensor.length; i++) {
+            var hour = new Date(result.sensor[i].time).getHours();
+            data.sensor[hour]++;
+        }
+        for (var i = 0; i < result.motion.length; i++) {
+            var hour = new Date(result.motion[i].time).getHours();
+            data.motion[hour]++;
+        }
+        for (var i = 0; i < result.other.length; i++) {
+            var hour = new Date(result.other[i].time).getHours();
+            data.other[hour]++;
+        }
+        console.log(JSON.stringify(data));
+        // 返回数据
+        res.json(data);
+    });
 });
 
 app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
@@ -262,6 +304,28 @@ Date.prototype.pattern = function (fmt) {
     return fmt;
 };
 
+Date.prototype.DateAdd = function (strInterval, Number) {
+    var dtTmp = this;
+    switch (strInterval) {
+        case 's' :
+            return new Date(Date.parse(dtTmp) + (1000 * Number));
+        case 'n' :
+            return new Date(Date.parse(dtTmp) + (60000 * Number));
+        case 'h' :
+            return new Date(Date.parse(dtTmp) + (3600000 * Number));
+        case 'd' :
+            return new Date(Date.parse(dtTmp) + (86400000 * Number));
+        case 'w' :
+            return new Date(Date.parse(dtTmp) + ((86400000 * 7) * Number));
+        case 'q' :
+            return new Date(dtTmp.getFullYear(), (dtTmp.getMonth()) + Number * 3, dtTmp.getDate(), dtTmp.getHours(), dtTmp.getMinutes(), dtTmp.getSeconds());
+        case 'm' :
+            return new Date(dtTmp.getFullYear(), (dtTmp.getMonth()) + Number, dtTmp.getDate(), dtTmp.getHours(), dtTmp.getMinutes(), dtTmp.getSeconds());
+        case 'y' :
+            return new Date((dtTmp.getFullYear() + Number), dtTmp.getMonth(), dtTmp.getDate(), dtTmp.getHours(), dtTmp.getMinutes(), dtTmp.getSeconds());
+    }
+}
+
 // DAO
 var getUPoiEvi = function (uid) {
     var av = null
@@ -460,7 +524,7 @@ var moGetAll = function (query) {
     return _rec(query, 0)
 };
 
-var getLog = function (installationId, startDateStr, endDateStr) {
+var getLog = function (installationId, startDateStr, endDateStr, callback) {
     var installation = {
         __type: 'Pointer',
         className: '_Installation',
@@ -478,41 +542,41 @@ var getLog = function (installationId, startDateStr, endDateStr) {
             data.push({
                 id: result[i].id,
                 type: result[i].attributes.type,
-                time: new Date(result[i].attributes.timestamp).pattern('yyyy-MM-dd hh:mm:ss')
+                time: new Date(result[i].attributes.timestamp).pattern('yyyy-MM-dd HH:mm:ss')
             });
         }
         return AV.Promise.all(data);
     }).then(function (data) {
-        var location = [];
-        var sensor = [];
-        var motion = [];
-        var other = [];
-
-        console.log('data[0]:' + data[0].time);
-
-        // 清洗数据
-        for (var i in data) {
-            switch (data[i].type) {
-                case 'location':
-                    location.push(data[i]);
-                    break;
-                case 'sensor':
-                    sensor.push(data[i]);
-                    break;
-                case 'motionLog':
-                    motion.push(data[i]);
-                    break;
-                default :
-                    other.push(data[i]);
+            var location = [];
+            var sensor = [];
+            var motion = [];
+            var other = [];
+            // 清洗数据
+            for (var i in data) {
+                switch (data[i].type) {
+                    case 'location':
+                        location.push(data[i]);
+                        break;
+                    case 'sensor':
+                        sensor.push(data[i]);
+                        break;
+                    case 'motionLog':
+                        motion.push(data[i]);
+                        break;
+                    default :
+                        other.push(data[i]);
+                }
             }
+            // 回调
+            callback({
+                category: ['location', 'sensor', 'motion', 'other'],
+                location: location,
+                sensor: sensor,
+                motion: motion,
+                other: other
+            });
         }
-        console.log('location.length:' + location.length);
-        console.log('sensor.length:' + sensor.length);
-        console.log('motion.length:' + motion.length);
-        console.log('other.length:' + other.length);
-
-
-    })
+    )
 };
 
 var _findAll = function (query) {
@@ -547,12 +611,112 @@ var _findAll = function (query) {
     );
 };
 
+var getLogNew = function (data, callback) {
+    var installation = {
+        __type: 'Pointer',
+        className: '_Installation',
+        objectId: data.installationId
+    };
+    //console.log('data:' + data);
+    var count = data.datas.length * data.xAxis.length;
+    console.log('count:' + count);
+    // 递归
+    for (var i in data.datas) {
+        var date = new Date(data.datas[i].name + ' 00:00:00');
+        for (var j in data.xAxis) {
+            // 处理时间
+            var startDate = date.DateAdd('h', j);
+            var endDate = date.DateAdd('h', parseInt(j) + 1);
+            startDateStr = startDate.pattern('yyyy-MM-dd HH:mm:ss');
+            endDateStr = endDate.pattern('yyyy-MM-dd HH:mm:ss');
+            //console.log('startDateStr:' + startDateStr + '|endDateStr:' + endDateStr);
+            // 构造查询
+            var query = new AV.Query('Log');
+            query.equalTo('installation', installation);
+            query.greaterThanOrEqualTo('createdAt', new Date(startDateStr));
+            query.lessThan('createdAt', new Date(endDateStr));
+            // 查询
+            f(query).then(function (result) {
+                console.log('result:' + result);
+            });
+        }
+    }
+};
+
+var f = function (query) {
+    return query.count().then(
+        function (count) {
+            return AV.Promise.as(count);
+        },
+        function (error) {
+            return AV.Promise.error(error);
+        }
+    );
+}
+
 function test() {
     console.log('test');
-    getLog('5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN', '2016-01-15 00:00:00', '2016-01-15 23:59:59');
 
-    //var ts = 1452775368728;
-    //console.log(new Date(ts).pattern('yyyy-MM-dd hh:mm:ss'));
+    // 返回数据
+    var data = {
+        installationId: '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN',
+        category: [],
+        xAxis: [],
+        datas: []
+    };
+    var init = [];
+    // 初始化
+    data.category = ['location', 'sensor', 'motion', 'other'];
+    for (var i = 0; i <= 23; i++) {
+        //var t = (i < 10 ? '0' + i : '' + i);
+        data.xAxis.push(i);
+        init.push(0);
+    }
+    // 时间切片
+    var start = '2016-01-16 00:00:00';
+    var end = '2016-01-16 23:59:59';
+    var count = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    for (var i = 0; i < count; i++) {
+        var date = new Date(start).DateAdd('d', i).pattern('yyyy-MM-dd');
+        data.datas.push({
+            name: date,
+            location: init,
+            sensor: init,
+            motion: init,
+            other: init
+        });
+    }
+    console.log(JSON.stringify(data));
+
+    getLogNew(data);
+
+    //var start = '2016-01-16 00:00:00';
+    //var end = '2016-01-16 23:59:59';
+    //getLog('5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN', start, end, function (result) {
+    //    console.log('location.length:' + result.location.length);
+    //    console.log('sensor.length:' + result.sensor.length);
+    //    console.log('motion.length:' + result.motion.length);
+    //    console.log('other.length:' + result.other.length);
+    //
+    //    // 时间切分
+    //    for (var i = 0; i < result.location.length; i++) {
+    //        var hour = new Date(result.location[i].time).getHours();
+    //        data.location[hour]++;
+    //    }
+    //    for (var i = 0; i < result.sensor.length; i++) {
+    //        var hour = new Date(result.sensor[i].time).getHours();
+    //        data.sensor[hour]++;
+    //    }
+    //    for (var i = 0; i < result.motion.length; i++) {
+    //        var hour = new Date(result.motion[i].time).getHours();
+    //        data.motion[hour]++;
+    //    }
+    //    for (var i = 0; i < result.other.length; i++) {
+    //        var hour = new Date(result.other[i].time).getHours();
+    //        data.other[hour]++;
+    //    }
+    //    console.log(JSON.stringify(data));
+    //});
 }
 
 test();
