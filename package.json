@@ -7,7 +7,9 @@
     "mongoose": "latest",
     "underscore": "latest",
     "avoscloud-sdk": "latest",
-    "body-parser": "latest"
+    "body-parser": "latest",
+    "request-promise": "",
+    "request": "latest"
   },
   "repository": {
     "type": "git",

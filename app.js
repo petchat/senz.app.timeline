@@ -5,17 +5,13 @@ var _ = require("underscore");
 var app = express();
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+var request = require('request');
+var rp = require('request-promise');
+
 var AV = require('avoscloud-sdk');
 var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81';
 var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia';
 AV.initialize(timelineId, timelineKey);
-
-// TODO
-var logId = '9ra69chz8rbbl77mlplnl4l2pxyaclm612khhytztl8b1f9o';
-var logKey = '1zohz2ihxp9dhqamhfpeaer8nh1ewqd9uephe9ztvkka544b';
-AV.initialize(logId, logKey);
-// 该语句应该只声明一次
-//var Log = AV.Object.extend('Log');
 
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
@@ -43,60 +39,24 @@ app.get('/query', function (req, res) {
     // 获取参数
     var startDate = req.query.startDate;
     var endDate = req.query.endDate;
+    var installationId = req.query.installationId;
     var userId = req.query.userId;
     // 处理参数
-    startDate += ' 00:00:00';
-    endDate += ' 23:59:59';
-    // 请求数据
-    getLog(userId, startDate, endDate, function (result) {
-        console.log('location.length:' + result.location.length);
-        console.log('sensor.length:' + result.sensor.length);
-        console.log('motion.length:' + result.motion.length);
-        console.log('other.length:' + result.other.length);
+    startTS = new Date(startDate + ' 00:00:00').getTime();
+    endTS = new Date(endDate + ' 00:00:00').DateAdd('d', 1).getTime();
 
-        var data = {
-            category: ['location', 'sensor', 'motion', 'other'],
-            xAxis: [],
-            location: [],
-            sensor: [],
-            motion: [],
-            other: []
-        };
-        // timeline赋值
-        // TODO 待完善
-        for (var i = 0; i <= 23; i++) {
-            var t = (i < 10 ? '0' + i : '' + i);
-            data.xAxis.push(t);
-            data.location.push(0);
-            data.sensor.push(0);
-            data.motion.push(0);
-            data.other.push(0);
-        }
-        // 时间切分
-        for (var i = 0; i < result.location.length; i++) {
-            var hour = new Date(result.location[i].time).getHours();
-            data.location[hour]++;
-        }
-        for (var i = 0; i < result.sensor.length; i++) {
-            var hour = new Date(result.sensor[i].time).getHours();
-            data.sensor[hour]++;
-        }
-        for (var i = 0; i < result.motion.length; i++) {
-            var hour = new Date(result.motion[i].time).getHours();
-            data.motion[hour]++;
-        }
-        for (var i = 0; i < result.other.length; i++) {
-            var hour = new Date(result.other[i].time).getHours();
-            data.other[hour]++;
-        }
-        console.log(JSON.stringify(data));
-        // 返回数据
+    console.log('startTS:' + startTS + '|endTS:' + endTS);
+    console.log('installationId:' + installationId + '|userId:' + userId);
+
+    getTotalData(installationId, userId, startTS, endTS, function (data) {
+        console.log(data);
         res.json(data);
     });
 });
 
 app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
 
+    console.log(req.params.datestr);
     var date = new Date(req.params.datestr);
     var startEnd = getTS(date);
     var tsStart = startEnd[0];
@@ -246,22 +206,6 @@ var getTS = function (date) {
     var startTS = start.getTime();
 
     var end = new Date(date.getTime());
-    end.setHours(23);
-    end.setMinutes(59);
-    end.setSeconds(59);
-    var endTS = end.getTime();
-
-    return [startTS, endTS];
-};
-
-var getTS = function (start, end) {
-    var start = new Date(start.getTime());
-    start.setHours(0);
-    start.setMinutes(0);
-    start.setSeconds(0);
-    var startTS = start.getTime();
-
-    var end = new Date(end.getTime());
     end.setHours(23);
     end.setMinutes(59);
     end.setSeconds(59);
@@ -524,7 +468,84 @@ var moGetAll = function (query) {
     return _rec(query, 0)
 };
 
-var getLog = function (installationId, startDateStr, endDateStr, callback) {
+var getTotalData = function (installationId, userId, startTS, endTS, callback) {
+    var queryLocationFunctionArray = [];
+    var queryMotionFunctionArray = [];
+    var locationFlag = false;
+    var MotionFlag = false;
+    var resultData = {
+        category: ['location', 'sensor', 'motion', 'other'],
+        xAxis: [],
+        location: [],
+        sensor: [],
+        motion: [],
+        other: [],
+        userLocation: [],
+        userMotion: []
+    };
+
+    for (var i = 0; i < (endTS - startTS) / 3600000; i++) {
+        var oneHour = 3600000;
+        queryLocationFunctionArray[i] = getUserLocationCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
+        queryMotionFunctionArray[i] = getUserMotionCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
+    }
+
+    AV.Promise.all(queryLocationFunctionArray).then(function (data) {
+        data.forEach(function (d) {
+            resultData.userLocation.push(JSON.parse(d).count);
+        });
+        locationFlag = true;
+        check();
+    });
+
+    AV.Promise.all(queryMotionFunctionArray).then(function (data) {
+        data.forEach(function (d) {
+            resultData.userMotion.push(JSON.parse(d).count);
+        });
+        MotionFlag = true;
+        check();
+    });
+
+    var logFlag = false;
+    // 请求leancloud数据
+    getLog(installationId, startTS, endTS, function (result) {
+        // timeline赋值
+        for (var i = 0; i <= 23; i++) {
+            resultData.xAxis.push(i);
+            resultData.location.push(0);
+            resultData.sensor.push(0);
+            resultData.motion.push(0);
+            resultData.other.push(0);
+        }
+        // 时间切分
+        for (var i = 0; i < result.location.length; i++) {
+            var hour = new Date(result.location[i].timestamp).getHours();
+            resultData.location[hour]++;
+        }
+        for (var i = 0; i < result.sensor.length; i++) {
+            var hour = new Date(result.sensor[i].timestamp).getHours();
+            resultData.sensor[hour]++;
+        }
+        for (var i = 0; i < result.motion.length; i++) {
+            var hour = new Date(result.motion[i].timestamp).getHours();
+            resultData.motion[hour]++;
+        }
+        for (var i = 0; i < result.other.length; i++) {
+            var hour = new Date(result.other[i].timestamp).getHours();
+            resultData.other[hour]++;
+        }
+        logFlag = true;
+        check();
+    });
+
+    function check() {
+        if (locationFlag && MotionFlag&&logFlag) {
+            callback(resultData);
+        }
+    }
+}
+
+var getLog = function (installationId, startTS, endTS, callback) {
     var installation = {
         __type: 'Pointer',
         className: '_Installation',
@@ -532,8 +553,8 @@ var getLog = function (installationId, startDateStr, endDateStr, callback) {
     };
     var query = new AV.Query('Log');
     query.equalTo('installation', installation);
-    query.greaterThanOrEqualTo('createdAt', new Date(startDateStr));
-    query.lessThanOrEqualTo('createdAt', new Date(endDateStr));
+    query.greaterThanOrEqualTo('timestamp', startTS);
+    query.lessThanOrEqualTo('timestamp', endTS);
     query.select('type', 'timestamp');
     _findAll(query).then(function (result) {
         // 转换数据
@@ -542,7 +563,7 @@ var getLog = function (installationId, startDateStr, endDateStr, callback) {
             data.push({
                 id: result[i].id,
                 type: result[i].attributes.type,
-                time: new Date(result[i].attributes.timestamp).pattern('yyyy-MM-dd HH:mm:ss')
+                timestamp: result[i].attributes.timestamp
             });
         }
         return AV.Promise.all(data);
@@ -578,6 +599,20 @@ var getLog = function (installationId, startDateStr, endDateStr, callback) {
         }
     )
 };
+
+var getUserLocationCountPerHour = function (userId, startTS, endTS) {
+    var url = 'http://api.trysenz.com/RefinedLog/api/UserLocations/count?' +
+        'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
+
+    return rp(url);
+}
+
+var getUserMotionCountPerHour = function (userId, startTS, endTS) {
+    var url = 'http://api.trysenz.com/RefinedLog/api/UserMotions/count?' +
+        'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
+
+    return rp(url);
+}
 
 var _findAll = function (query) {
     return query.count().then(
@@ -657,66 +692,42 @@ var f = function (query) {
 function test() {
     console.log('test');
 
-    // 返回数据
-    var data = {
-        installationId: '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN',
-        category: [],
-        xAxis: [],
-        datas: []
-    };
-    var init = [];
-    // 初始化
-    data.category = ['location', 'sensor', 'motion', 'other'];
-    for (var i = 0; i <= 23; i++) {
-        //var t = (i < 10 ? '0' + i : '' + i);
-        data.xAxis.push(i);
-        init.push(0);
-    }
-    // 时间切片
-    var start = '2016-01-16 00:00:00';
-    var end = '2016-01-16 23:59:59';
-    var count = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / (24 * 60 * 60 * 1000)) + 1;
-    for (var i = 0; i < count; i++) {
-        var date = new Date(start).DateAdd('d', i).pattern('yyyy-MM-dd');
-        data.datas.push({
-            name: date,
-            location: init,
-            sensor: init,
-            motion: init,
-            other: init
-        });
-    }
-    console.log(JSON.stringify(data));
-
-    getLogNew(data);
-
+    //// 返回数据
+    //var data = {
+    //    installationId: '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN',
+    //    category: [],
+    //    xAxis: [],
+    //    datas: []
+    //};
+    //var init = [];
+    //// 初始化
+    //data.category = ['location', 'sensor', 'motion', 'other'];
+    //for (var i = 0; i <= 23; i++) {
+    //    //var t = (i < 10 ? '0' + i : '' + i);
+    //    data.xAxis.push(i);
+    //    init.push(0);
+    //}
+    //// 时间切片
     //var start = '2016-01-16 00:00:00';
     //var end = '2016-01-16 23:59:59';
-    //getLog('5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN', start, end, function (result) {
-    //    console.log('location.length:' + result.location.length);
-    //    console.log('sensor.length:' + result.sensor.length);
-    //    console.log('motion.length:' + result.motion.length);
-    //    console.log('other.length:' + result.other.length);
-    //
-    //    // 时间切分
-    //    for (var i = 0; i < result.location.length; i++) {
-    //        var hour = new Date(result.location[i].time).getHours();
-    //        data.location[hour]++;
-    //    }
-    //    for (var i = 0; i < result.sensor.length; i++) {
-    //        var hour = new Date(result.sensor[i].time).getHours();
-    //        data.sensor[hour]++;
-    //    }
-    //    for (var i = 0; i < result.motion.length; i++) {
-    //        var hour = new Date(result.motion[i].time).getHours();
-    //        data.motion[hour]++;
-    //    }
-    //    for (var i = 0; i < result.other.length; i++) {
-    //        var hour = new Date(result.other[i].time).getHours();
-    //        data.other[hour]++;
-    //    }
-    //    console.log(JSON.stringify(data));
-    //});
+    //var count = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    //for (var i = 0; i < count; i++) {
+    //    var date = new Date(start).DateAdd('d', i).pattern('yyyy-MM-dd');
+    //    data.datas.push({
+    //        name: date,
+    //        location: init,
+    //        sensor: init,
+    //        motion: init,
+    //        other: init
+    //    });
+    //}
+    ////console.log(JSON.stringify(data));
+    //getLogNew(data);
+
+    var userId = '558a5ee7e4b0acec6b941e96';
+    var installationId = '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN';
+    var startTS = 1453046400000;
+    var endTS = 1453132800000;
 }
 
 test();
