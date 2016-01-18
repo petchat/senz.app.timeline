@@ -188,7 +188,7 @@ app.get('/basestation/date/:date', function (req, res) {
 
 });
 
-var server = app.listen(9111, 'localhost', function () {
+var server = app.listen(9111, '0.0.0.0', function () {
 
     var host = server.address().address;
     var port = server.address().port;
