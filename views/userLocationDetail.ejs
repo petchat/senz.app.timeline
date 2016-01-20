@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>userLocationDetail</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="/scripts/jquery.min.js"></script>
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="/scripts/bootstrap.min.js"></script>
+    <!-- 引入 ECharts 文件 -->
+    <script src="/scripts/echarts.min.js"></script>
+    <!-- 百度地图 -->
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=PqBkTpvACBvFaYq3ZvVLKhRx"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-12">
+            <div style="position:fixed;left:0;top:0;width: 100%;height: 320px;background: #ffffff">
+                userId:<%= userId %>
+                <div id="mapContainer" style="width: 100%;height: 300px;"></div>
+            </div>
+            <table class="table table-striped" style="margin-top: 320px">
+                <thead>
+                <tr>
+                    <th>id</th>
+                    <th>timestamp</th>
+                    <th>recent_poi_title</th>
+                    <th>location</th>
+                </tr>
+                </thead>
+                <tbody>
+                <% for(var i in datas){ %>
+                <tr>
+                    <td><%= datas[i].id %></td>
+                    <td><%= datas[i].timestamp %></td>
+                    <td><%= datas[i].recent_poi_title %></td>
+                    <td><%= JSON.stringify(datas[i].location) %>
+                        <button type="button" class="btn btn-primary btn-xs pull-right toMapBtn"
+                                value="<%= JSON.stringify(datas[i].location) %>">查看地点
+                        </button>
+                    </td>
+                </tr>
+                <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    $(document).ready(function () {
+        var map = new BMap.Map("mapContainer");       // 创建地图实例
+        var point = new BMap.Point(116.404, 39.915);  // 创建点坐标
+        map.centerAndZoom(point, 17);                 // 初始化地图，设置中心点坐标和地图级别
+        map.addControl(new BMap.NavigationControl());
+        map.addControl(new BMap.ScaleControl());
+        map.addControl(new BMap.OverviewMapControl());
+
+        var marker = new BMap.Marker(point);        // 创建标注
+
+        $('.toMapBtn').click(function () {
+            var location = JSON.parse($(this).val());
+            console.log(JSON.stringify(location));
+
+            map.removeOverlay(marker);
+            point = new BMap.Point(location.lng, location.lat);
+            marker = new BMap.Marker(point);
+            map.addOverlay(marker);
+            map.panTo(point);
+        });
+    });
+</script>
+</html>

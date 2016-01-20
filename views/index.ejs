@@ -4,23 +4,23 @@
     <title>首页</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="/scripts/jquery.min.js"></script>
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="/scripts/bootstrap.min.js"></script>
+    <!-- 引入 ECharts 文件 -->
+    <script src="/scripts/echarts.min.js"></script>
 </head>
 <body>
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-2">
             <form>
-                <!--<div class="form-group">-->
-                <!--<label>开始时间</label>-->
-                <!--<input type="date" class="form-control" id="startDateInput" placeholder="请选择" value="<%= date %>">-->
-                <!--</div>-->
-                <!--<div class="form-group">-->
-                <!--<label>结束时间</label>-->
-                <!--<input type="date" class="form-control" id="endDateInput" placeholder="请选择" value="<%= date %>">-->
-                <!--</div>-->
                 <div class="form-group">
                     <label>选择日期</label>
-                    <input type="date" class="form-control" id="startDateInput" placeholder="请选择"
+                    <input type="date" class="form-control" id="dateInput" placeholder="请选择"
                            value="<%= date %>">
                 </div>
                 <div class="form-group">
@@ -34,26 +34,28 @@
                 <button type="button" class="btn btn-default btn-primary btn-block" id="searchButton">查询</button>
             </form>
         </div>
-        <div class="col-xs-10">
-            <label>查看的数据库</label>
+        <div id="content" class="col-xs-10 hidden">
+            <!--<label>查看的数据库</label>-->
 
-            <div>
-                <label class="checkbox-inline">
-                    <input type="checkbox" id="logCheckbox" value="logDiv" checked> Log DB
-                </label>
-                <label class="checkbox-inline">
-                    <input type="checkbox" id="userLocationCheckbox" value="userLocationDiv" checked> UserLocation DB
-                </label>
-                <label class="checkbox-inline">
-                    <input type="checkbox" id="userMotionCheckbox" value="userMotionDiv" checked> UserMotion DB
-                </label>
-                <label class="checkbox-inline">
-                    <input type="checkbox" id="userEventCheckbox" value="userEventDiv" checked> UserEvent DB
-                </label>
-            </div>
+            <!--<div>-->
+            <!--<label class="checkbox-inline">-->
+            <!--<input type="checkbox" id="logCheckbox" value="logDiv" checked> Log DB-->
+            <!--</label>-->
+            <!--<label class="checkbox-inline">-->
+            <!--<input type="checkbox" id="userLocationCheckbox" value="userLocationDiv" checked> UserLocation DB-->
+            <!--</label>-->
+            <!--<label class="checkbox-inline">-->
+            <!--<input type="checkbox" id="userMotionCheckbox" value="userMotionDiv" checked> UserMotion DB-->
+            <!--</label>-->
+            <!--<label class="checkbox-inline">-->
+            <!--<input type="checkbox" id="userEventCheckbox" value="userEventDiv" checked> UserEvent DB-->
+            <!--</label>-->
+            <!--</div>-->
             <div class="panel panel-default" id="logDiv">
                 <div class="panel-heading">
                     Log DB
+                    <!--<button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn" value="logDetail">查看详情-->
+                    <!--</button>-->
                 </div>
                 <div class="panel-body">
                     <div id="logChartDiv" style="height:400px;">
@@ -64,6 +66,9 @@
             <div class="panel panel-default" id="userLocationDiv">
                 <div class="panel-heading">
                     UserLocation DB
+                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn"
+                            value="userLocationDetail">查看详情
+                    </button>
                 </div>
                 <div class="panel-body">
                     <div id="userLocationChartDiv" style="height:400px;">
@@ -74,6 +79,9 @@
             <div class="panel panel-default" id="userMotionDiv">
                 <div class="panel-heading">
                     UserMotion DB
+                    <!--<button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn"-->
+                    <!--value="userMotionDetail">查看详情-->
+                    <!--</button>-->
                 </div>
                 <div class="panel-body">
                     <div id="userMotionChartDiv" style="height:400px;">
@@ -84,6 +92,9 @@
             <div class="panel panel-default" id="userEventDiv">
                 <div class="panel-heading">
                     UserEvent DB
+                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn" value="userEventDetail">
+                        查看详情
+                    </button>
                 </div>
                 <div class="panel-body">
                     <div id="userEventChartDiv" style="height:400px;">
@@ -95,73 +106,86 @@
     </div>
 </div>
 </body>
-<!-- 新 Bootstrap 核心 CSS 文件 -->
-<link rel="stylesheet" href="css/bootstrap.min.css">
-<!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
-<script src="scripts/jquery.min.js"></script>
-<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
-<script src="scripts/bootstrap.min.js"></script>
-<!-- 引入 ECharts 文件 -->
-<script src="scripts/echarts.min.js"></script>
 <script>
-    var url = '/query';
-    var startDate, endDate, userId, installationId;
-    var logChart = echarts.init(document.getElementById('logChartDiv'));
-    var userLocationChart = echarts.init(document.getElementById('userLocationChartDiv'));
-    var userMotionChart = echarts.init(document.getElementById('userMotionChartDiv'));
-    var userEventChart = echarts.init(document.getElementById('userEventChartDiv'));
+    var date, userId, installationId;
     $(document).ready(function () {
         $('#searchButton').click(function () {
             // 获取参数
-//            startDate = $('#startDateInput').val();
-//            endDate = $('#endDateInput').val();
-            startDate = endDate = $('#startDateInput').val();
+            date = $('#dateInput').val();
             userId = $('#userIdInput').val();
             installationId = $('#installationIdInput').val();
             // 构造参数
             var data = {
-                startDate: startDate,
-                endDate: endDate,
+                date: date,
                 userId: userId,
                 installationId: installationId
             }
             console.log(JSON.stringify(data));
             // 请求数据
             $.ajax({
-                url: url,
-                async: false,
+                url: '/query',
+                async: true,
                 type: 'GET',
                 data: data,
                 success: function (data) {
                     console.log(JSON.stringify(data));
-                    loadLogChartData(data);
-                    loadUserLocationChartData(data);
-                    loadUserMotionChartData(data);
-                    loadUserEventChartData(data);
+
+                    $('#content').removeClass('hidden');
+
+                    if (installationId != '') {
+                        loadLogChartData(data);
+                    } else {
+                        $('#logDiv').addClass('hidden');
+                    }
+
+                    if (userId != '') {
+                        loadUserLocationChartData(data);
+                        loadUserMotionChartData(data);
+                        loadUserEventChartData(data);
+                    } else {
+                        $('#userLocationDiv').addClass('hidden');
+                        $('#userMotionDiv').addClass('hidden');
+                        $('#userEventDiv').addClass('hidden');
+                    }
                 },
                 error: errorAlert
             });
         });
         // 不同数据库显示
-        $('#logCheckbox').change(changeTableShowOrHiden);
-        $('#userLocationCheckbox').change(changeTableShowOrHiden);
-        $('#userMotionCheckbox').change(changeTableShowOrHiden);
-        $('#userEventCheckbox').change(changeTableShowOrHiden);
+//        $('#logCheckbox').change(changeTableShowOrHiden);
+//        $('#userLocationCheckbox').change(changeTableShowOrHiden);
+//        $('#userMotionCheckbox').change(changeTableShowOrHiden);
+//        $('#userEventCheckbox').change(changeTableShowOrHiden);
+        // 详情跳转
+        $('.toDetailBtn').click(function () {
+            var which = $(this).val();
+            var url = '/detail/' + which + '?date=' + date + '&userId=' + userId + '&installationId=' + installationId;
+            toNewTabPage(url);
+        });
     });
+
+    function toNewTabPage(url) {
+        var a = $("<a href=" + url + " target='_blank'></a>").get(0);
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        a.dispatchEvent(event);
+    }
 
     function errorAlert(error) {
         alert('请求失败!\n' + JSON.stringify(error));
     }
 
-    function changeTableShowOrHiden() {
-        if ($(this).is(':checked')) {
-            $('#' + $(this).val()).removeClass('hidden');
-        } else {
-            $('#' + $(this).val()).addClass('hidden');
-        }
-    }
+    //    function changeTableShowOrHiden() {
+    //        if ($(this).is(':checked')) {
+    //            $('#' + $(this).val()).removeClass('hidden');
+    //        } else {
+    //            $('#' + $(this).val()).addClass('hidden');
+    //        }
+    //    }
 
     function loadLogChartData(data) {
+        $('#logDiv').removeClass('hidden');
+        var logChart = echarts.init(document.getElementById('logChartDiv'));
         logChart.setOption({
             tooltip: {
                 formatter: '{c}'
@@ -178,25 +202,27 @@
             },
             series: [{
                 name: 'location',
-                type: 'line',
+                type: 'bar',
                 data: data.location
             }, {
                 name: 'sensor',
-                type: 'line',
+                type: 'bar',
                 data: data.sensor
             }, {
                 name: 'motion',
-                type: 'line',
+                type: 'bar',
                 data: data.motion
             }, {
                 name: 'other',
-                type: 'line',
+                type: 'bar',
                 data: data.other
             }]
         });
     }
 
     function loadUserLocationChartData(data) {
+        $('#userLocationDiv').removeClass('hidden');
+        var userLocationChart = echarts.init(document.getElementById('userLocationChartDiv'));
         userLocationChart.setOption({
             tooltip: {
                 formatter: '{c}'
@@ -209,13 +235,15 @@
                 name: '数量'
             },
             series: [{
-                type: 'line',
+                type: 'bar',
                 data: data.userLocation
             }]
         });
     }
 
     function loadUserMotionChartData(data) {
+        $('#userMotionDiv').removeClass('hidden');
+        var userMotionChart = echarts.init(document.getElementById('userMotionChartDiv'));
         userMotionChart.setOption({
             tooltip: {
                 formatter: '{c}'
@@ -228,13 +256,15 @@
                 name: '数量'
             },
             series: [{
-                type: 'line',
+                type: 'bar',
                 data: data.userMotion
             }]
         });
     }
 
     function loadUserEventChartData(data) {
+        $('#userEventDiv').removeClass('hidden');
+        var userEventChart = echarts.init(document.getElementById('userEventChartDiv'));
         userEventChart.setOption({
             tooltip: {
                 formatter: '{c}'
@@ -247,7 +277,7 @@
                 name: '数量'
             },
             series: [{
-                type: 'line',
+                type: 'bar',
                 data: data.userEvent
             }]
         });

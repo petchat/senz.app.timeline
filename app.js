@@ -5,7 +5,6 @@ var _ = require("underscore");
 var app = express();
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var request = require('request');
 var rp = require('request-promise');
 
 var AV = require('avoscloud-sdk');
@@ -37,13 +36,12 @@ app.get('/index', function (req, res) {
 
 app.get('/query', function (req, res) {
     // 获取参数
-    var startDate = req.query.startDate;
-    var endDate = req.query.endDate;
+    var date = req.query.date;
     var installationId = req.query.installationId;
     var userId = req.query.userId;
     // 处理参数
-    startTS = new Date(startDate + ' 00:00:00').getTime();
-    endTS = new Date(endDate + ' 00:00:00').DateAdd('d', 1).getTime();
+    startTS = new Date(date + ' 00:00:00').getTime();
+    endTS = new Date(date + ' 00:00:00').DateAdd('d', 1).getTime();
 
     console.log('startTS:' + startTS + '|endTS:' + endTS);
     console.log('installationId:' + installationId + '|userId:' + userId);
@@ -52,6 +50,63 @@ app.get('/query', function (req, res) {
         console.log(data);
         res.json(data);
     });
+});
+
+app.get('/detail/:detail', function (req, res) {
+    // 获取参数
+    var detail = req.params.detail;
+    var date = req.query.date;
+    var installationId = req.query.installationId;
+    var userId = req.query.userId;
+    // 处理参数
+    startTS = new Date(date + ' 00:00:00').getTime();
+    endTS = new Date(date + ' 00:00:00').DateAdd('d', 1).getTime();
+
+    //console.log('startTS:' + startTS + '|endTS:' + endTS);
+    //console.log('detail:' + detail + '|installationId:' + installationId + '|userId:' + userId);
+
+    var data = {
+        userId: userId,
+        installationId: installationId,
+        datas: []
+    };
+    switch (detail) {
+        case 'userEventDetail':
+            // 请求数据
+            getUserEvent(userId, startTS, endTS, function (result) {
+                for (var i in result) {
+                    data.datas.push({
+                        id: result[i].id,
+                        startTime: new Date(result[i].startTime).pattern('yyyy-MM-dd HH:mm:ss'),
+                        data_quality: result[i].data_quality,
+                        event: result[i].event,
+                        level2_event: result[i].level2_event
+                    });
+                }
+                //console.log(data);
+                res.render(detail, data);
+            });
+            break;
+        case 'userLocationDetail':
+            // 请求数据
+            getUserLocationDetails(userId, startTS, endTS)
+                .then(function (result) {
+                    console.log(result.length);
+                    result.forEach(function (d) {
+                        var d0 = JSON.parse(JSON.stringify(d));
+                        data.datas.push({
+                            id: d0._id,
+                            timestamp: new Date(d0.timestamp).pattern('yyyy-MM-dd HH:mm:ss'),
+                            recent_poi_title: d0.pois.pois[0].title,
+                            location: d0.location
+                        });
+                    });
+                    //console.log(data);
+                    console.log(data.datas.length);
+                    res.render(detail, data);
+                });
+            break;
+    }
 });
 
 app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert', function (req, res) {
@@ -499,60 +554,71 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         resultData.userEvent.push(0);
     }
 
-    for (var i = 0; i < (endTS - startTS) / 3600000; i++) {
-        var oneHour = 3600000;
-        queryLocationFunctionArray[i] = getUserLocationCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
-        queryMotionFunctionArray[i] = getUserMotionCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
-    }
-
-    AV.Promise.all(queryLocationFunctionArray).then(function (data) {
-        data.forEach(function (d) {
-            resultData.userLocation.push(JSON.parse(d).count);
+    if (installationId != '') {
+        // 请求leancloud数据
+        getLog(installationId, startTS, endTS, function (result) {
+            // 时间切分
+            for (var i = 0; i < result.location.length; i++) {
+                var hour = new Date(result.location[i].timestamp).getHours();
+                resultData.location[hour]++;
+            }
+            for (var i = 0; i < result.sensor.length; i++) {
+                var hour = new Date(result.sensor[i].timestamp).getHours();
+                resultData.sensor[hour]++;
+            }
+            for (var i = 0; i < result.motion.length; i++) {
+                var hour = new Date(result.motion[i].timestamp).getHours();
+                resultData.motion[hour]++;
+            }
+            for (var i = 0; i < result.other.length; i++) {
+                var hour = new Date(result.other[i].timestamp).getHours();
+                resultData.other[hour]++;
+            }
+            logFlag = true;
+            check();
         });
-        userLocationFlag = true;
-        check();
-    });
-
-    AV.Promise.all(queryMotionFunctionArray).then(function (data) {
-        data.forEach(function (d) {
-            resultData.userMotion.push(JSON.parse(d).count);
-        });
-        userMotionFlag = true;
-        check();
-    });
-
-    // 请求leancloud数据
-    getLog(installationId, startTS, endTS, function (result) {
-        // 时间切分
-        for (var i = 0; i < result.location.length; i++) {
-            var hour = new Date(result.location[i].timestamp).getHours();
-            resultData.location[hour]++;
-        }
-        for (var i = 0; i < result.sensor.length; i++) {
-            var hour = new Date(result.sensor[i].timestamp).getHours();
-            resultData.sensor[hour]++;
-        }
-        for (var i = 0; i < result.motion.length; i++) {
-            var hour = new Date(result.motion[i].timestamp).getHours();
-            resultData.motion[hour]++;
-        }
-        for (var i = 0; i < result.other.length; i++) {
-            var hour = new Date(result.other[i].timestamp).getHours();
-            resultData.other[hour]++;
-        }
+    } else {
         logFlag = true;
         check();
-    });
+    }
 
-    getUserEvent(userId, startTS, endTS, function (result) {
-        // 时间切分
-        for (var i = 0; i < result.length; i++) {
-            var hour = new Date(result[i].startTime).getHours();
-            resultData.userEvent[hour]++;
+    if (userId != '') {
+        for (var i = 0; i < (endTS - startTS) / 3600000; i++) {
+            var oneHour = 3600000;
+            queryLocationFunctionArray[i] = getUserLocationCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
+            queryMotionFunctionArray[i] = getUserMotionCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
         }
-        userEventFlag = true;
+
+        AV.Promise.all(queryLocationFunctionArray).then(function (data) {
+            data.forEach(function (d) {
+                resultData.userLocation.push(JSON.parse(d).count);
+            });
+            userLocationFlag = true;
+            check();
+        });
+
+        AV.Promise.all(queryMotionFunctionArray).then(function (data) {
+            data.forEach(function (d) {
+                resultData.userMotion.push(JSON.parse(d).count);
+            });
+            userMotionFlag = true;
+            check();
+        });
+
+        // 请求leancloud数据
+        getUserEvent(userId, startTS, endTS, function (result) {
+            // 时间切分
+            for (var i = 0; i < result.length; i++) {
+                var hour = new Date(result[i].startTime).getHours();
+                resultData.userEvent[hour]++;
+            }
+            userEventFlag = true;
+            check();
+        });
+    } else {
+        userLocationFlag = userMotionFlag = userEventFlag = true;
         check();
-    });
+    }
 
     function check() {
         if (userLocationFlag && userMotionFlag && logFlag && userEventFlag) {
@@ -658,124 +724,39 @@ var getUserMotionCountPerHour = function (userId, startTS, endTS) {
     return rp(url);
 }
 
-//var _findAll = function (query) {
-//    return query.count().then(
-//        function (count) {
-//            var promises = [];
-//            var pages = Math.ceil(count / 1000);
-//            for (var i = 0; i <= pages; i++) {
-//                var _query = _.clone(query);
-//                _query.limit(1000);
-//                _query.skip(i * 1000);
-//                promises.push(_query.find());
-//            }
-//            return AV.Promise.all(promises);
-//        },
-//        function (error) {
-//            return AV.Promise.error(error);
-//        }
-//    ).then(
-//        function (results) {
-//            var rebuid_result = [];
-//            results.forEach(function (result_list) {
-//                result_list.forEach(function (list_item) {
-//                    rebuid_result.push(list_item);
-//                });
-//            });
-//            return AV.Promise.as(rebuid_result);
-//        },
-//        function (error) {
-//            return AV.Promise.error(error);
-//        }
-//    );
-//};
-
-var getLogNew = function (data, callback) {
-    var installation = {
-        __type: 'Pointer',
-        className: '_Installation',
-        objectId: data.installationId
+var getUserLocationDetails = function (userId, startTS, endTS) {
+    var where = {
+        timestamp: {$gte: startTS, $lt: endTS},
+        user_id: userId
     };
-    //console.log('data:' + data);
-    var count = data.datas.length * data.xAxis.length;
-    console.log('count:' + count);
-    // 递归
-    for (var i in data.datas) {
-        var date = new Date(data.datas[i].name + ' 00:00:00');
-        for (var j in data.xAxis) {
-            // 处理时间
-            var startDate = date.DateAdd('h', j);
-            var endDate = date.DateAdd('h', parseInt(j) + 1);
-            startDateStr = startDate.pattern('yyyy-MM-dd HH:mm:ss');
-            endDateStr = endDate.pattern('yyyy-MM-dd HH:mm:ss');
-            //console.log('startDateStr:' + startDateStr + '|endDateStr:' + endDateStr);
-            // 构造查询
-            var query = new AV.Query('Log');
-            query.equalTo('installation', installation);
-            query.greaterThanOrEqualTo('createdAt', new Date(startDateStr));
-            query.lessThan('createdAt', new Date(endDateStr));
-            // 查询
-            f(query).then(function (result) {
-                console.log('result:' + result);
-            });
-        }
-    }
-};
+    console.log(where);
 
-var f = function (query) {
-    return query.count().then(
-        function (count) {
-            return AV.Promise.as(count);
-        },
-        function (error) {
-            return AV.Promise.error(error);
-        }
-    );
-}
+    var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0});
+
+    return moGetAll(query, 0, []);
+};
 
 function test() {
     console.log('test');
 
-    //// 返回数据
-    //var data = {
-    //    installationId: '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN',
-    //    category: [],
-    //    xAxis: [],
-    //    datas: []
-    //};
-    //var init = [];
-    //// 初始化
-    //data.category = ['location', 'sensor', 'motion', 'other'];
-    //for (var i = 0; i <= 23; i++) {
-    //    //var t = (i < 10 ? '0' + i : '' + i);
-    //    data.xAxis.push(i);
-    //    init.push(0);
-    //}
-    //// 时间切片
-    //var start = '2016-01-16 00:00:00';
-    //var end = '2016-01-16 23:59:59';
-    //var count = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / (24 * 60 * 60 * 1000)) + 1;
-    //for (var i = 0; i < count; i++) {
-    //    var date = new Date(start).DateAdd('d', i).pattern('yyyy-MM-dd');
-    //    data.datas.push({
-    //        name: date,
-    //        location: init,
-    //        sensor: init,
-    //        motion: init,
-    //        other: init
-    //    });
-    //}
-    ////console.log(JSON.stringify(data));
-    //getLogNew(data);
-
     var userId = '558a5ee7e4b0acec6b941e96';
     var installationId = '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN';
     var startTS = 1453046400000;
-    var endTS = 1453132800000;
+    //var endTS = 1453132800000;
+    var endTS = 1453050000000;
 
-    //getUserEvent(userId, startTS, endTS, function (result) {
-    //    console.log(result);
-    //});
+    getUserLocationDetails(userId, startTS, endTS)
+        .then(function (d) {
+            console.log(JSON.stringify(d[0]))
+            var a = JSON.parse(JSON.stringify(d[0]));
+            console.log('############');
+            console.log(a.location);
+        });
+    //var promises = [];
+    //promises.push(getUserLocationDetails(userId, startTS, endTS));
+    //AV.Promise.all(promises).then(function (results) {
+    //    console.log(results);
+    //})
 }
 
-test();
+//test();
