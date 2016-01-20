@@ -287,7 +287,7 @@ var getUPoiEvi = function (uid) {
     return promise
 }
 
-var _AvfindAll = function (query) {
+var _AvFindAll = function (query) {
     return query.count().then(
         function (count) {
             var promises = [];
@@ -347,7 +347,7 @@ var getAvUserEvent = function (uid, tsStart, tsEnd) {
     query.lessThan("end_datetime", new Date(tsEnd));
     query.greaterThan("start_datetime", new Date(tsStart));
     query.equalTo("user", user);
-    return _AvfindAll(query)
+    return _AvFindAll(query)
 };
 
 var getAvHomeOfficeUtrace = function (uid) {
@@ -355,7 +355,7 @@ var getAvHomeOfficeUtrace = function (uid) {
     var query = new AV.Query(HomeOfficeUtrace);
     var user = AV.Object.createWithoutData("_User", uid);
     query.equalTo("user", user);
-    return _AvfindAll(query);
+    return _AvFindAll(query);
 };
 
 var getAvUserActivity = function (uid, tsStart, tsEnd) {
@@ -365,7 +365,7 @@ var getAvUserActivity = function (uid, tsStart, tsEnd) {
     query.lessThan("time_range_end", new Date(tsEnd));
     query.greaterThan("time_range_start", new Date(tsStart));
     query.equalTo("user_id", uid);
-    return _AvfindAll(query)
+    return _AvFindAll(query)
 };
 
 var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
@@ -375,7 +375,7 @@ var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
     query.lessThan("expire", tsEnd);
     query.greaterThan("timestamp", tsStart);
     query.equalTo("user", user);
-    return _AvfindAll(query);
+    return _AvFindAll(query);
 };
 
 var getMoHomeOfficeStatus = function (uid, tsStart, tsEnd) {
@@ -469,10 +469,15 @@ var moGetAll = function (query) {
 };
 
 var getTotalData = function (installationId, userId, startTS, endTS, callback) {
+    // query arrays
     var queryLocationFunctionArray = [];
     var queryMotionFunctionArray = [];
-    var locationFlag = false;
-    var MotionFlag = false;
+    // flag
+    var logFlag = false;
+    var userLocationFlag = false;
+    var userMotionFlag = false;
+    var userEventFlag = false;
+    // result
     var resultData = {
         category: ['location', 'sensor', 'motion', 'other'],
         xAxis: [],
@@ -481,8 +486,18 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         motion: [],
         other: [],
         userLocation: [],
-        userMotion: []
+        userMotion: [],
+        userEvent: []
     };
+    // timeline赋值
+    for (var i = 0; i <= 23; i++) {
+        resultData.xAxis.push(i);
+        resultData.location.push(0);
+        resultData.sensor.push(0);
+        resultData.motion.push(0);
+        resultData.other.push(0);
+        resultData.userEvent.push(0);
+    }
 
     for (var i = 0; i < (endTS - startTS) / 3600000; i++) {
         var oneHour = 3600000;
@@ -494,7 +509,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         data.forEach(function (d) {
             resultData.userLocation.push(JSON.parse(d).count);
         });
-        locationFlag = true;
+        userLocationFlag = true;
         check();
     });
 
@@ -502,21 +517,12 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         data.forEach(function (d) {
             resultData.userMotion.push(JSON.parse(d).count);
         });
-        MotionFlag = true;
+        userMotionFlag = true;
         check();
     });
 
-    var logFlag = false;
     // 请求leancloud数据
     getLog(installationId, startTS, endTS, function (result) {
-        // timeline赋值
-        for (var i = 0; i <= 23; i++) {
-            resultData.xAxis.push(i);
-            resultData.location.push(0);
-            resultData.sensor.push(0);
-            resultData.motion.push(0);
-            resultData.other.push(0);
-        }
         // 时间切分
         for (var i = 0; i < result.location.length; i++) {
             var hour = new Date(result.location[i].timestamp).getHours();
@@ -538,8 +544,18 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         check();
     });
 
+    getUserEvent(userId, startTS, endTS, function (result) {
+        // 时间切分
+        for (var i = 0; i < result.length; i++) {
+            var hour = new Date(result[i].startTime).getHours();
+            resultData.userEvent[hour]++;
+        }
+        userEventFlag = true;
+        check();
+    });
+
     function check() {
-        if (locationFlag && MotionFlag&&logFlag) {
+        if (userLocationFlag && userMotionFlag && logFlag && userEventFlag) {
             callback(resultData);
         }
     }
@@ -554,9 +570,9 @@ var getLog = function (installationId, startTS, endTS, callback) {
     var query = new AV.Query('Log');
     query.equalTo('installation', installation);
     query.greaterThanOrEqualTo('timestamp', startTS);
-    query.lessThanOrEqualTo('timestamp', endTS);
+    query.lessThan('timestamp', endTS);
     query.select('type', 'timestamp');
-    _findAll(query).then(function (result) {
+    _AvFindAll(query).then(function (result) {
         // 转换数据
         var data = [];
         for (var i in result) {
@@ -600,6 +616,34 @@ var getLog = function (installationId, startTS, endTS, callback) {
     )
 };
 
+var getUserEvent = function (userId, startTS, endTS, callback) {
+    var user = {
+        __type: 'Pointer',
+        className: '_User',
+        objectId: userId
+    };
+    var query = new AV.Query('UserEvent');
+    query.equalTo('user', user);
+    query.greaterThanOrEqualTo('timestamp', startTS);
+    query.lessThan('timestamp', endTS);
+    query.select('startTime', 'data_quality', 'event', 'level2_event');
+    _AvFindAll(query).then(function (result) {
+        // 转换数据
+        var data = [];
+        for (var i in result) {
+            data.push({
+                id: result[i].id,
+                startTime: result[i].attributes.startTime,
+                data_quality: result[i].attributes.data_quality,
+                event: result[i].attributes.event,
+                level2_event: result[i].attributes.level2_event,
+            });
+        }
+        // 回调
+        callback(data);
+    })
+};
+
 var getUserLocationCountPerHour = function (userId, startTS, endTS) {
     var url = 'http://api.trysenz.com/RefinedLog/api/UserLocations/count?' +
         'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
@@ -614,37 +658,37 @@ var getUserMotionCountPerHour = function (userId, startTS, endTS) {
     return rp(url);
 }
 
-var _findAll = function (query) {
-    return query.count().then(
-        function (count) {
-            var promises = [];
-            var pages = Math.ceil(count / 1000);
-            for (var i = 0; i <= pages; i++) {
-                var _query = _.clone(query);
-                _query.limit(1000);
-                _query.skip(i * 1000);
-                promises.push(_query.find());
-            }
-            return AV.Promise.all(promises);
-        },
-        function (error) {
-            return AV.Promise.error(error);
-        }
-    ).then(
-        function (results) {
-            var rebuid_result = [];
-            results.forEach(function (result_list) {
-                result_list.forEach(function (list_item) {
-                    rebuid_result.push(list_item);
-                });
-            });
-            return AV.Promise.as(rebuid_result);
-        },
-        function (error) {
-            return AV.Promise.error(error);
-        }
-    );
-};
+//var _findAll = function (query) {
+//    return query.count().then(
+//        function (count) {
+//            var promises = [];
+//            var pages = Math.ceil(count / 1000);
+//            for (var i = 0; i <= pages; i++) {
+//                var _query = _.clone(query);
+//                _query.limit(1000);
+//                _query.skip(i * 1000);
+//                promises.push(_query.find());
+//            }
+//            return AV.Promise.all(promises);
+//        },
+//        function (error) {
+//            return AV.Promise.error(error);
+//        }
+//    ).then(
+//        function (results) {
+//            var rebuid_result = [];
+//            results.forEach(function (result_list) {
+//                result_list.forEach(function (list_item) {
+//                    rebuid_result.push(list_item);
+//                });
+//            });
+//            return AV.Promise.as(rebuid_result);
+//        },
+//        function (error) {
+//            return AV.Promise.error(error);
+//        }
+//    );
+//};
 
 var getLogNew = function (data, callback) {
     var installation = {
@@ -728,6 +772,10 @@ function test() {
     var installationId = '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN';
     var startTS = 1453046400000;
     var endTS = 1453132800000;
+
+    //getUserEvent(userId, startTS, endTS, function (result) {
+    //    console.log(result);
+    //});
 }
 
 test();

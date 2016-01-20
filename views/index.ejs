@@ -86,6 +86,9 @@
                     UserEvent DB
                 </div>
                 <div class="panel-body">
+                    <div id="userEventChartDiv" style="height:400px;">
+
+                    </div>
                 </div>
             </div>
         </div>
@@ -106,6 +109,7 @@
     var logChart = echarts.init(document.getElementById('logChartDiv'));
     var userLocationChart = echarts.init(document.getElementById('userLocationChartDiv'));
     var userMotionChart = echarts.init(document.getElementById('userMotionChartDiv'));
+    var userEventChart = echarts.init(document.getElementById('userEventChartDiv'));
     $(document).ready(function () {
         $('#searchButton').click(function () {
             // 获取参数
@@ -133,6 +137,7 @@
                     loadLogChartData(data);
                     loadUserLocationChartData(data);
                     loadUserMotionChartData(data);
+                    loadUserEventChartData(data);
                 },
                 error: errorAlert
             });
@@ -225,6 +230,25 @@
             series: [{
                 type: 'line',
                 data: data.userMotion
+            }]
+        });
+    }
+
+    function loadUserEventChartData(data) {
+        userEventChart.setOption({
+            tooltip: {
+                formatter: '{c}'
+            },
+            xAxis: {
+                name: '时间',
+                data: data.xAxis
+            },
+            yAxis: {
+                name: '数量'
+            },
+            series: [{
+                type: 'line',
+                data: data.userEvent
             }]
         });
     }
