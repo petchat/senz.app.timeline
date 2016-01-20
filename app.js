@@ -745,18 +745,6 @@ function test() {
     //var endTS = 1453132800000;
     var endTS = 1453050000000;
 
-    getUserLocationDetails(userId, startTS, endTS)
-        .then(function (d) {
-            console.log(JSON.stringify(d[0]))
-            var a = JSON.parse(JSON.stringify(d[0]));
-            console.log('############');
-            console.log(a.location);
-        });
-    //var promises = [];
-    //promises.push(getUserLocationDetails(userId, startTS, endTS));
-    //AV.Promise.all(promises).then(function (results) {
-    //    console.log(results);
-    //})
 }
 
 //test();
