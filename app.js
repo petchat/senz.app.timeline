@@ -122,7 +122,7 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
 
     var promises = [];
     promises.push(getMoUserLocation(uid, tsStart, tsEnd));
-    promises.push(getAvUserEvent(uid, tsStart, tsEnd));
+    promises.push(getMoUserEvent(uid, tsStart, tsEnd));
     promises.push(getAvUserActivity(uid, tsStart, tsEnd));
     promises.push(getMoHomeOfficeStatus(uid, tsStart, tsEnd));
     return AV.Promise.all(promises)
@@ -387,7 +387,8 @@ var getMoUserLocation = function (uid, tsStart, tsEnd) {
 
 var getMoUserEvent = function (uid, tsStart, tsEnd) {
     var where = {
-        timestamp: {$gt: tsStart, $lt: tsEnd},
+        start_datetime: {$gte: new Date(tsStart)},
+        end_datetime: {$lte: new Date(tsEnd)},
         user_id: uid
     };
 
