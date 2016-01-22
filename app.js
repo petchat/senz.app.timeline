@@ -73,25 +73,42 @@ app.get('/detail/:detail', function (req, res) {
     switch (detail) {
         case 'userEventDetail':
             // 请求数据
-            getUserEvent(userId, startTS, endTS, function (result) {
-                for (var i in result) {
-                    data.datas.push({
-                        id: result[i].id,
-                        startTime: new Date(result[i].startTime).pattern('yyyy-MM-dd HH:mm:ss'),
-                        data_quality: result[i].data_quality,
-                        event: result[i].event,
-                        level2_event: result[i].level2_event
+            //getUserEvent(userId, startTS, endTS, function (result) {
+            //    for (var i in result) {
+            //        data.datas.push({
+            //            id: result[i].id,
+            //            startTime: new Date(result[i].startTime).pattern('yyyy-MM-dd HH:mm:ss'),
+            //            data_quality: result[i].data_quality,
+            //            event: result[i].event,
+            //            level2_event: result[i].level2_event
+            //        });
+            //    }
+            //    //console.log(data);
+            //    res.render(detail, data);
+            //});
+            getUserEventDetails(userId, startTS, endTS)
+                .then(function (result) {
+                    console.log('count:' + result.length);
+                    result.forEach(function (d) {
+                        var d0 = JSON.parse(JSON.stringify(d));
+                        data.datas.push({
+                            id: d0._id,
+                            startTime: new Date(d0.startTime).pattern('yyyy-MM-dd HH:mm:ss'),
+                            timestamp: new Date(d0.timestamp).pattern('yyyy-MM-dd HH:mm:ss'),
+                            data_quality: d0.data_quality,
+                            event: d0.event,
+                            level2_event: d0.level2_event,
+                        });
                     });
-                }
-                //console.log(data);
-                res.render(detail, data);
-            });
+                    //console.log(data);
+                    res.render(detail, data);
+                });
             break;
         case 'userLocationDetail':
             // 请求数据
             getUserLocationDetails(userId, startTS, endTS)
                 .then(function (result) {
-                    console.log(result.length);
+                    console.log('count:' + result.length);
                     result.forEach(function (d) {
                         var d0 = JSON.parse(JSON.stringify(d));
                         data.datas.push({
@@ -102,7 +119,6 @@ app.get('/detail/:detail', function (req, res) {
                         });
                     });
                     //console.log(data);
-                    console.log(data.datas.length);
                     res.render(detail, data);
                 });
             break;
@@ -527,6 +543,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
     // query arrays
     var queryLocationFunctionArray = [];
     var queryMotionFunctionArray = [];
+    var queryEventFunctionArray = [];
     // flag
     var logFlag = false;
     var userLocationFlag = false;
@@ -551,7 +568,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         resultData.sensor.push(0);
         resultData.motion.push(0);
         resultData.other.push(0);
-        resultData.userEvent.push(0);
+        //resultData.userEvent.push(0);
     }
 
     if (installationId != '') {
@@ -587,6 +604,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
             var oneHour = 3600000;
             queryLocationFunctionArray[i] = getUserLocationCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
             queryMotionFunctionArray[i] = getUserMotionCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
+            queryEventFunctionArray[i] = getUserEventCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
         }
 
         AV.Promise.all(queryLocationFunctionArray).then(function (data) {
@@ -605,16 +623,24 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
             check();
         });
 
-        // 请求leancloud数据
-        getUserEvent(userId, startTS, endTS, function (result) {
-            // 时间切分
-            for (var i = 0; i < result.length; i++) {
-                var hour = new Date(result[i].startTime).getHours();
-                resultData.userEvent[hour]++;
-            }
+        AV.Promise.all(queryEventFunctionArray).then(function (data) {
+            data.forEach(function (d) {
+                resultData.userEvent.push(JSON.parse(d).count);
+            });
             userEventFlag = true;
             check();
         });
+
+        // 请求leancloud数据
+        //getUserEvent(userId, startTS, endTS, function (result) {
+        //    // 时间切分
+        //    for (var i = 0; i < result.length; i++) {
+        //        var hour = new Date(result[i].startTime).getHours();
+        //        resultData.userEvent[hour]++;
+        //    }
+        //    userEventFlag = true;
+        //    check();
+        //});
     } else {
         userLocationFlag = userMotionFlag = userEventFlag = true;
         check();
@@ -724,6 +750,13 @@ var getUserMotionCountPerHour = function (userId, startTS, endTS) {
     return rp(url);
 }
 
+var getUserEventCountPerHour = function (userId, startTS, endTS) {
+    var url = 'http://api.trysenz.com/RefinedLog/api/UserEvents/count?' +
+        'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
+
+    return rp(url);
+}
+
 var getUserLocationDetails = function (userId, startTS, endTS) {
     var where = {
         timestamp: {$gte: startTS, $lt: endTS},
@@ -731,7 +764,20 @@ var getUserLocationDetails = function (userId, startTS, endTS) {
     };
     console.log(where);
 
-    var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0});
+    //var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0});
+    var query = UL.find(where);
+
+    return moGetAll(query, 0, []);
+};
+
+var getUserEventDetails = function (userId, startTS, endTS) {
+    var where = {
+        timestamp: {$gte: startTS, $lt: endTS},
+        user_id: userId
+    };
+    console.log(where);
+
+    var query = UE.find(where);
 
     return moGetAll(query, 0, []);
 };
@@ -739,12 +785,14 @@ var getUserLocationDetails = function (userId, startTS, endTS) {
 function test() {
     console.log('test');
 
-    var userId = '558a5ee7e4b0acec6b941e96';
+    var userId = '560bdbcb60b267e6db7aa2a9';
     var installationId = '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN';
-    var startTS = 1453046400000;
-    //var endTS = 1453132800000;
-    var endTS = 1453050000000;
+    var startTS = 1453392000000;
+    var endTS = 1453478400000;
 
+    var data = {
+        datas: []
+    }
 }
 
-//test();
+test();
