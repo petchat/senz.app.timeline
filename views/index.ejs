@@ -12,6 +12,8 @@
     <script src="/scripts/bootstrap.min.js"></script>
     <!-- 引入 ECharts 文件 -->
     <script src="/scripts/echarts.min.js"></script>
+    <!-- 引入 jquery.cookie 文件 -->
+    <script src="/scripts/jquery.cookie.js"></script>
 </head>
 <body>
 <div class="container-fluid">
@@ -31,31 +33,25 @@
                     <label>installationId</label>
                     <input type="text" class="form-control" id="installationIdInput" placeholder="请输入installationId">
                 </div>
+                <form role="form">
+                    <div class="form-group">
+                        <label for="name">选择列表</label>
+                        <select class="form-control" id="userSelect">
+                            <option data-installationId="" data-userId="">请选择</option>
+                            <% for(var i in datas){ %>
+                            <option data-installationId="<%= datas[i].installationId %>"
+                                    data-userId="<%= datas[i].userId %>"><%= datas[i].name %></option>
+                            <% } %>
+                        </select>
+                    </div>
+                </form>
                 <button type="button" class="btn btn-default btn-primary btn-block" id="searchButton">查询</button>
             </form>
         </div>
         <div id="content" class="col-xs-10 hidden">
-            <!--<label>查看的数据库</label>-->
-
-            <!--<div>-->
-            <!--<label class="checkbox-inline">-->
-            <!--<input type="checkbox" id="logCheckbox" value="logDiv" checked> Log DB-->
-            <!--</label>-->
-            <!--<label class="checkbox-inline">-->
-            <!--<input type="checkbox" id="userLocationCheckbox" value="userLocationDiv" checked> UserLocation DB-->
-            <!--</label>-->
-            <!--<label class="checkbox-inline">-->
-            <!--<input type="checkbox" id="userMotionCheckbox" value="userMotionDiv" checked> UserMotion DB-->
-            <!--</label>-->
-            <!--<label class="checkbox-inline">-->
-            <!--<input type="checkbox" id="userEventCheckbox" value="userEventDiv" checked> UserEvent DB-->
-            <!--</label>-->
-            <!--</div>-->
             <div class="panel panel-default" id="logDiv">
                 <div class="panel-heading">
                     Log DB
-                    <!--<button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn" value="logDetail">查看详情-->
-                    <!--</button>-->
                 </div>
                 <div class="panel-body">
                     <div id="logChartDiv" style="height:400px;">
@@ -79,9 +75,6 @@
             <div class="panel panel-default" id="userMotionDiv">
                 <div class="panel-heading">
                     UserMotion DB
-                    <!--<button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn"-->
-                    <!--value="userMotionDetail">查看详情-->
-                    <!--</button>-->
                 </div>
                 <div class="panel-body">
                     <div id="userMotionChartDiv" style="height:400px;">
@@ -109,6 +102,15 @@
 <script>
     var date, userId, installationId;
     $(document).ready(function () {
+        // 加载历史记录
+//        loadHistory();
+        $('#userSelect').change(function () {
+            var obj = $(this).find(':checked');
+            console.log(obj.attr('data-installationId'));
+            console.log(obj.attr('data-userId'));
+            $('#userIdInput').val(obj.attr('data-userId'));
+            $('#installationIdInput').val(obj.attr('data-installationId'));
+        });
         $('#searchButton').click(function () {
             // 获取参数
             date = $('#dateInput').val();
@@ -121,6 +123,8 @@
                 installationId: installationId
             }
             console.log(JSON.stringify(data));
+            // 保存历史记录
+//            saveHistory();
             // 请求数据
             $.ajax({
                 url: '/query',
@@ -151,11 +155,6 @@
                 error: errorAlert
             });
         });
-        // 不同数据库显示
-//        $('#logCheckbox').change(changeTableShowOrHiden);
-//        $('#userLocationCheckbox').change(changeTableShowOrHiden);
-//        $('#userMotionCheckbox').change(changeTableShowOrHiden);
-//        $('#userEventCheckbox').change(changeTableShowOrHiden);
         // 详情跳转
         $('.toDetailBtn').click(function () {
             var which = $(this).val();
@@ -163,6 +162,30 @@
             toNewTabPage(url);
         });
     });
+
+    function loadHistory() {
+        // 加载cookie
+        var str = $.cookie('history');
+        if (str != undefined) {
+            console.log(str);
+            var obj = JSON.parse(str);
+            console.log(obj.history);
+            var history = obj.history;
+            console.log('history:' + JSON.stringify(history));
+        }
+    }
+
+    function saveHistory() {
+        // 保存cookie
+//        var history = $.cookie('history');
+//        if (history == undefined) {
+//            $.cookie('history', JSON.stringify({history: [data]}));
+//        } else {
+//            var obj = JSON.parse(history);
+//            obj.history[obj.history.length] = data;
+//            $.cookie('history', JSON.stringify(obj));
+//        }
+    }
 
     function toNewTabPage(url) {
         var a = $("<a href=" + url + " target='_blank'></a>").get(0);
@@ -174,14 +197,6 @@
     function errorAlert(error) {
         alert('请求失败!\n' + JSON.stringify(error));
     }
-
-    //    function changeTableShowOrHiden() {
-    //        if ($(this).is(':checked')) {
-    //            $('#' + $(this).val()).removeClass('hidden');
-    //        } else {
-    //            $('#' + $(this).val()).addClass('hidden');
-    //        }
-    //    }
 
     function loadLogChartData(data) {
         $('#logDiv').removeClass('hidden');

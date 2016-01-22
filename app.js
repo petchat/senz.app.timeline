@@ -5,7 +5,8 @@ var _ = require("underscore");
 var app = express();
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var rp = require('request-promise');
+var requestPromise = require('request-promise');
+var cookieParser = require('cookie-parser')
 
 var AV = require('avoscloud-sdk');
 var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81';
@@ -15,21 +16,83 @@ AV.initialize(timelineId, timelineKey);
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
+app.use(cookieParser());
 
 var mapHtml = 'cloud/views/new_map.ejs';
 
 // 使用 Express 路由 API 服务 /hello 的 HTTP GET 请求
 app.get('/hello', function (req, res) {
-    res.json({
-        DateTime: new Date().toLocaleString(),
-        Date: new Date().toLocaleDateString(),
-        Time: new Date().toLocaleTimeString()
-    });
+    console.log("Cookies: ", req.cookies);
+    var result = {
+        Time: new Date().pattern('yyyy-MM-dd HH:mm;ss')
+    };
+    res.json(result);
 });
 
 app.get('/index', function (req, res) {
     var data = {
-        date: new Date().pattern('yyyy-MM-dd')
+        date: new Date().pattern('yyyy-MM-dd'),
+        datas: [{
+            name: '张亨洋',
+            userId: '560388c100b09b53b59504d2',
+            installationId: 'ElPG0i10dKplkcqkacurXVfwoyLHF3UV'
+        },{
+            name: '冯小平',
+            userId: '5684fa9e00b009a31af7efcb',
+            installationId: 'aoXQRUGjNb25HyG8J3wfIB9APjWp6mOe'
+        },{
+            name: '涂腾飞',
+            userId: '568a0ca200b01b9f2c08f53d',
+            installationId: 'ynnAdkuvdolGEsxhUYIpyL70nJGVDX7b'
+        },{
+            name: '刘九思',
+            userId: '5684d18200b068a2a955aefc',
+            installationId: 'ntK466fF6qCfJeYLwGYJ8od5L8n1gwXD'
+        },{
+            name: '郭志毅',
+            userId: '5624d68460b2b199f7628914',
+            installationId: 'clCdNs1Yd9B0o8oGkkro3s9N1kTpxBVf'
+        },{
+            name: '杨蕊',
+            userId: '5604e5ce60b2521fb8eb240a',
+            installationId: 'K36siTgM8StOW3W5YXguFa2GK2X6kMMx'
+        },{
+            name: '徐以彬',
+            userId: '56406b4a00b0ee7f57b5c3a3',
+            installationId: 'CpMjyBI2oGAjJDfQiehPnzDchlmAWxzA'
+        },{
+            name: '贾晨宇',
+            userId: '5689cd6d60b2e57ba2c05e4c',
+            installationId: 'FXiPOQjv2stL1FAuDieWmSwjlanVEGmf'
+        },{
+            name: '张弓',
+            userId: '564575ac60b20fc9b99d8d9d',
+            installationId: '4Y5KKBtB7TuPrAiQd14xE1EarhJu0EQ0'
+        },{
+            name: '贺佳玮',
+            userId: '558a5ee7e4b0acec6b941e96',
+            installationId: 'sFlPo3d40EXFvQ4sBiqMQ2sPJwf0XnbU'
+        },{
+            name: '刘丽',
+            userId: '55f788f4ddb25bb7713125ef',
+            installationId: 'lq1V2vWODJMDOoplWPHMH3HLFJuJW6kL'
+        },{
+            name: '张子帅',
+            userId: '55c1e2d900b0ee7fd66e8ea3',
+            installationId: 'ipAujsbPwifG5EMPcec9gCXeVSFyp2EN'
+        },{
+            name: '李轲',
+            userId: '5653c88e00b0e772838cd61b',
+            installationId: 'k5luekqGhj9JUYnG7jIJRIPL5tNn0czA'
+        },{
+            name: '豆豆',
+            userId: '5682580d00b0f9a1f22748c7',
+            installationId: 'yKJpjUD6ouU8oUnX3Sq8BO03AWrW4QQy'
+        },{
+            name: '梦欣',
+            userId: '5684d3d660b2b60f65d84285',
+            installationId: 'h8CQnD4g3VtojKIdymYEcRAIMidOH6wG'
+        }]
     };
     res.render('index', data);
 });
@@ -62,9 +125,6 @@ app.get('/detail/:detail', function (req, res) {
     startTS = new Date(date + ' 00:00:00').getTime();
     endTS = new Date(date + ' 00:00:00').DateAdd('d', 1).getTime();
 
-    //console.log('startTS:' + startTS + '|endTS:' + endTS);
-    //console.log('detail:' + detail + '|installationId:' + installationId + '|userId:' + userId);
-
     var data = {
         userId: userId,
         installationId: installationId,
@@ -72,20 +132,6 @@ app.get('/detail/:detail', function (req, res) {
     };
     switch (detail) {
         case 'userEventDetail':
-            // 请求数据
-            //getUserEvent(userId, startTS, endTS, function (result) {
-            //    for (var i in result) {
-            //        data.datas.push({
-            //            id: result[i].id,
-            //            startTime: new Date(result[i].startTime).pattern('yyyy-MM-dd HH:mm:ss'),
-            //            data_quality: result[i].data_quality,
-            //            event: result[i].event,
-            //            level2_event: result[i].level2_event
-            //        });
-            //    }
-            //    //console.log(data);
-            //    res.render(detail, data);
-            //});
             getUserEventDetails(userId, startTS, endTS)
                 .then(function (result) {
                     console.log('count:' + result.length);
@@ -632,16 +678,6 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
             check();
         });
 
-        // 请求leancloud数据
-        //getUserEvent(userId, startTS, endTS, function (result) {
-        //    // 时间切分
-        //    for (var i = 0; i < result.length; i++) {
-        //        var hour = new Date(result[i].startTime).getHours();
-        //        resultData.userEvent[hour]++;
-        //    }
-        //    userEventFlag = true;
-        //    check();
-        //});
     } else {
         userLocationFlag = userMotionFlag = userEventFlag = true;
         check();
@@ -709,53 +745,25 @@ var getLog = function (installationId, startTS, endTS, callback) {
     )
 };
 
-var getUserEvent = function (userId, startTS, endTS, callback) {
-    var user = {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: userId
-    };
-    var query = new AV.Query('UserEvent');
-    query.equalTo('user', user);
-    query.greaterThanOrEqualTo('timestamp', startTS);
-    query.lessThan('timestamp', endTS);
-    query.select('startTime', 'data_quality', 'event', 'level2_event');
-    _AvFindAll(query).then(function (result) {
-        // 转换数据
-        var data = [];
-        for (var i in result) {
-            data.push({
-                id: result[i].id,
-                startTime: result[i].attributes.startTime,
-                data_quality: result[i].attributes.data_quality,
-                event: result[i].attributes.event,
-                level2_event: result[i].attributes.level2_event,
-            });
-        }
-        // 回调
-        callback(data);
-    })
-};
-
 var getUserLocationCountPerHour = function (userId, startTS, endTS) {
     var url = 'http://api.trysenz.com/RefinedLog/api/UserLocations/count?' +
         'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
 
-    return rp(url);
+    return requestPromise(url);
 }
 
 var getUserMotionCountPerHour = function (userId, startTS, endTS) {
     var url = 'http://api.trysenz.com/RefinedLog/api/UserMotions/count?' +
         'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
 
-    return rp(url);
+    return requestPromise(url);
 }
 
 var getUserEventCountPerHour = function (userId, startTS, endTS) {
     var url = 'http://api.trysenz.com/RefinedLog/api/UserEvents/count?' +
         'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
 
-    return rp(url);
+    return requestPromise(url);
 }
 
 var getUserLocationDetails = function (userId, startTS, endTS) {
