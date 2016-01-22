@@ -34,8 +34,8 @@ app.get('/index', function (req, res) {
         date: new Date().pattern('yyyy-MM-dd'),
         datas: [{
             name: '张亨洋',
-            userId: '560388c100b09b53b59504d2',
-            installationId: 'ElPG0i10dKplkcqkacurXVfwoyLHF3UV'
+            userId: '569ccda100b04bbf1ee10b4a',
+            installationId: 'RlX6tbryE7tj58NFo8b7mLpbCQjg27EK'
         },{
             name: '冯小平',
             userId: '5684fa9e00b009a31af7efcb',
@@ -615,7 +615,6 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         resultData.sensor.push(0);
         resultData.motion.push(0);
         resultData.other.push(0);
-        //resultData.userEvent.push(0);
     }
 
     if (installationId != '') {
@@ -794,14 +793,14 @@ var getUserEventDetails = function (userId, startTS, endTS) {
 function test() {
     console.log('test');
 
-    var userId = '560bdbcb60b267e6db7aa2a9';
-    var installationId = '5RSndlIk9gxpwndcdOXLLeUjGNzGCaKN';
+    var userId = '569ccda100b04bbf1ee10b4a';
+    var installationId = 'RlX6tbryE7tj58NFo8b7mLpbCQjg27EK';
     var startTS = 1453392000000;
     var endTS = 1453478400000;
 
-    var data = {
-        datas: []
-    }
+    getTotalData(installationId, userId, startTS, endTS, function (data) {
+        console.log(data);
+    });
 }
 
 test();
