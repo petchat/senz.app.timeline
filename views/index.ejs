@@ -46,6 +46,9 @@
                     </div>
                 </form>
                 <button type="button" class="btn btn-default btn-primary btn-block" id="searchButton">查询</button>
+                <ul class="list-group" style="overflow: scroll;margin-top: 20px">
+                    <li class="list-group-item hidden" id="historyItemHidden">Hidden</li>
+                </ul>
             </form>
         </div>
         <div id="content" class="col-xs-10 hidden">
@@ -103,7 +106,9 @@
     var date, userId, installationId;
     $(document).ready(function () {
         // 加载历史记录
-//        loadHistory();
+        var history = loadHistory();
+        // 显示历史记录
+        showHistory(history);
         $('#userSelect').change(function () {
             var obj = $(this).find(':checked');
             console.log(obj.attr('data-installationId'));
@@ -123,8 +128,15 @@
                 installationId: installationId
             }
             console.log(JSON.stringify(data));
+            // 添加历史记录
+            if (history.length >= 10) {
+                history.shift();
+            }
+            history.push(data);
+            // 显示历史记录
+            showHistory(history);
             // 保存历史记录
-//            saveHistory();
+            saveHistory(history);
             // 请求数据
             $.ajax({
                 url: '/query',
@@ -167,24 +179,39 @@
         // 加载cookie
         var str = $.cookie('history');
         if (str != undefined) {
-            console.log(str);
             var obj = JSON.parse(str);
-            console.log(obj.history);
             var history = obj.history;
-            console.log('history:' + JSON.stringify(history));
+            return history;
+        } else {
+            return [];
         }
     }
 
-    function saveHistory() {
+    function showHistory(history) {
+        $('.historyShow').remove();
+        for (var i = 0; i < history.length; i++) {
+            var obj = history[i];
+            var item = $('#historyItemHidden').clone();
+            item.removeAttr('id');
+            item.removeClass('hidden');
+            item.addClass('historyShow');
+            item.text(obj.date + '\n' + obj.userId + '\n' + obj.installationId);
+            item.attr('data-date', obj.date);
+            item.attr('data-userId', obj.userId);
+            item.attr('data-installationId', obj.installationId);
+            // 点击
+            item.click(function () {
+                $('#dateInput').val($(this).attr('data-date'));
+                $('#userIdInput').val($(this).attr('data-userId'));
+                $('#installationIdInput').val($(this).attr('data-installationId'));
+            });
+            $('#historyItemHidden').after(item);
+        }
+    }
+
+    function saveHistory(history) {
         // 保存cookie
-//        var history = $.cookie('history');
-//        if (history == undefined) {
-//            $.cookie('history', JSON.stringify({history: [data]}));
-//        } else {
-//            var obj = JSON.parse(history);
-//            obj.history[obj.history.length] = data;
-//            $.cookie('history', JSON.stringify(obj));
-//        }
+        $.cookie('history', JSON.stringify({history: history}));
     }
 
     function toNewTabPage(url) {

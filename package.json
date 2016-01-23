@@ -8,8 +8,7 @@
     "underscore": "latest",
     "avoscloud-sdk": "latest",
     "body-parser": "latest",
-    "request-promise": "latest",
-    "cookie-parser": "latest"
+    "request-promise": "latest"
   },
   "repository": {
     "type": "git",

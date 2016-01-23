@@ -6,7 +6,7 @@ var app = express();
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var requestPromise = require('request-promise');
-var cookieParser = require('cookie-parser')
+//var cookieParser = require('cookie-parser')
 
 var AV = require('avoscloud-sdk');
 var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81';
@@ -16,13 +16,12 @@ AV.initialize(timelineId, timelineKey);
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(cookieParser());
+//app.use(cookieParser());
 
 var mapHtml = 'cloud/views/new_map.ejs';
 
 // 使用 Express 路由 API 服务 /hello 的 HTTP GET 请求
 app.get('/hello', function (req, res) {
-    console.log("Cookies: ", req.cookies);
     var result = {
         Time: new Date().pattern('yyyy-MM-dd HH:mm;ss')
     };
@@ -36,59 +35,59 @@ app.get('/index', function (req, res) {
             name: '张亨洋',
             userId: '569ccda100b04bbf1ee10b4a',
             installationId: 'RlX6tbryE7tj58NFo8b7mLpbCQjg27EK'
-        },{
+        }, {
             name: '冯小平',
             userId: '5684fa9e00b009a31af7efcb',
             installationId: 'aoXQRUGjNb25HyG8J3wfIB9APjWp6mOe'
-        },{
+        }, {
             name: '涂腾飞',
             userId: '568a0ca200b01b9f2c08f53d',
             installationId: 'ynnAdkuvdolGEsxhUYIpyL70nJGVDX7b'
-        },{
+        }, {
             name: '刘九思',
             userId: '5684d18200b068a2a955aefc',
             installationId: 'ntK466fF6qCfJeYLwGYJ8od5L8n1gwXD'
-        },{
+        }, {
             name: '郭志毅',
             userId: '5624d68460b2b199f7628914',
             installationId: 'clCdNs1Yd9B0o8oGkkro3s9N1kTpxBVf'
-        },{
+        }, {
             name: '杨蕊',
             userId: '5604e5ce60b2521fb8eb240a',
             installationId: 'K36siTgM8StOW3W5YXguFa2GK2X6kMMx'
-        },{
+        }, {
             name: '徐以彬',
             userId: '56406b4a00b0ee7f57b5c3a3',
             installationId: 'CpMjyBI2oGAjJDfQiehPnzDchlmAWxzA'
-        },{
+        }, {
             name: '贾晨宇',
             userId: '5689cd6d60b2e57ba2c05e4c',
             installationId: 'FXiPOQjv2stL1FAuDieWmSwjlanVEGmf'
-        },{
+        }, {
             name: '张弓',
             userId: '564575ac60b20fc9b99d8d9d',
             installationId: '4Y5KKBtB7TuPrAiQd14xE1EarhJu0EQ0'
-        },{
+        }, {
             name: '贺佳玮',
             userId: '558a5ee7e4b0acec6b941e96',
             installationId: 'sFlPo3d40EXFvQ4sBiqMQ2sPJwf0XnbU'
-        },{
+        }, {
             name: '刘丽',
             userId: '55f788f4ddb25bb7713125ef',
             installationId: 'lq1V2vWODJMDOoplWPHMH3HLFJuJW6kL'
-        },{
+        }, {
             name: '张子帅',
             userId: '55c1e2d900b0ee7fd66e8ea3',
             installationId: 'ipAujsbPwifG5EMPcec9gCXeVSFyp2EN'
-        },{
+        }, {
             name: '李轲',
             userId: '5653c88e00b0e772838cd61b',
             installationId: 'k5luekqGhj9JUYnG7jIJRIPL5tNn0czA'
-        },{
+        }, {
             name: '豆豆',
             userId: '5682580d00b0f9a1f22748c7',
             installationId: 'yKJpjUD6ouU8oUnX3Sq8BO03AWrW4QQy'
-        },{
+        }, {
             name: '梦欣',
             userId: '5684d3d660b2b60f65d84285',
             installationId: 'h8CQnD4g3VtojKIdymYEcRAIMidOH6wG'
@@ -797,10 +796,6 @@ function test() {
     var installationId = 'RlX6tbryE7tj58NFo8b7mLpbCQjg27EK';
     var startTS = 1453392000000;
     var endTS = 1453478400000;
-
-    getTotalData(installationId, userId, startTS, endTS, function (data) {
-        console.log(data);
-    });
 }
 
 test();
