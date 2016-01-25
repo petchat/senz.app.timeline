@@ -100,8 +100,8 @@ app.get('/query', function (req, res) {
     var installationId = req.query.installationId;
     var userId = req.query.userId;
     // 处理参数
-    startTS = new Date(date + ' 00:00:00').getTime();
-    endTS = new Date(date + ' 00:00:00').DateAdd('d', 1).getTime();
+    var startTS = new Date(date + ' 00:00:00').getTime();
+    var endTS = new Date(date + ' 00:00:00').DateAdd('d', 1).getTime();
 
     console.log('startTS:' + startTS + '|endTS:' + endTS);
     console.log('installationId:' + installationId + '|userId:' + userId);
@@ -466,7 +466,7 @@ var getMoUserLocation = function (uid, tsStart, tsEnd) {
         user_id: uid
     };
 
-    var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0});
+    var query = UL.find(where).select({_id: 1, timestamp: 1, location: 1});
 
     return moGetAll(query, 0, [])
 };
@@ -478,19 +478,19 @@ var getMoUserEvent = function (uid, tsStart, tsEnd) {
         user_id: uid
     };
 
-    var query = UE.find(where);
+    var query = UE.find(where).select({_id: 1, evidence_list: 1, event: 1});
     return moGetAll(query, 0, [])
 };
 
-var getAvUserEvent = function (uid, tsStart, tsEnd) {
-    var UserEvent = AV.Object.extend("UserEvent");
-    var query = new AV.Query(UserEvent);
-    var user = AV.Object.createWithoutData("_User", uid);
-    query.lessThan("end_datetime", new Date(tsEnd));
-    query.greaterThan("start_datetime", new Date(tsStart));
-    query.equalTo("user", user);
-    return _AvFindAll(query)
-};
+//var getAvUserEvent = function (uid, tsStart, tsEnd) {
+//    var UserEvent = AV.Object.extend("UserEvent");
+//    var query = new AV.Query(UserEvent);
+//    var user = AV.Object.createWithoutData("_User", uid);
+//    query.lessThan("end_datetime", new Date(tsEnd));
+//    query.greaterThan("start_datetime", new Date(tsStart));
+//    query.equalTo("user", user);
+//    return _AvFindAll(query)
+//};
 
 var getAvHomeOfficeUtrace = function (uid) {
     var HomeOfficeUtrace = AV.Object.extend("HomeOfficeUtrace");
@@ -528,7 +528,7 @@ var getMoHomeOfficeStatus = function (uid, tsStart, tsEnd) {
         algo_type: "offline"
     };
 
-    var query = HO.find(where);
+    var query = HO.find(where).select({_id: 1, status: 1, user_location_id: 1});
 
     return moGetAll(query, 0, []);
 };
@@ -588,9 +588,9 @@ var HO = mongoose.model('HomeOfficeStatus', HOSchema, 'HomeOfficeStatus');
 
 var moGetAll = function (query) {
 
-    var limit = 100
+    var limit = 100;
 
-    var result = []
+    var result = [];
 
     var _rec = function (query, skip) {
         return query.skip(skip).exec(function (e, d) {
