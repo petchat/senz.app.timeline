@@ -6,7 +6,6 @@ var app = express();
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var requestPromise = require('request-promise');
-var cookieParser = require('cookie-parser')
 
 var AV = require('avoscloud-sdk');
 var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81';
@@ -16,13 +15,12 @@ AV.initialize(timelineId, timelineKey);
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(cookieParser());
+//app.use(cookieParser());
 
 var mapHtml = 'cloud/views/new_map.ejs';
 
 // 使用 Express 路由 API 服务 /hello 的 HTTP GET 请求
 app.get('/hello', function (req, res) {
-    console.log("Cookies: ", req.cookies);
     var result = {
         Time: new Date().pattern('yyyy-MM-dd HH:mm;ss')
     };
