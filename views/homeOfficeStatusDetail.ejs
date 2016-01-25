@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>userEventDetail</title>
+    <title>homeOfficeStatusDetail</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <!-- 新 Bootstrap 核心 CSS 文件 -->
@@ -21,22 +21,20 @@
                 <thead>
                 <tr>
                     <th>id</th>
-                    <th>startTime</th>
+                    <th>expire</th>
                     <th>timestamp</th>
-                    <th>data_quality</th>
-                    <th>event</th>
-                    <th>level2_event</th>
+                    <th>status</th>
+                    <th>algo_type</th>
                 </tr>
                 </thead>
                 <tbody>
                 <% for(var i in datas){ %>
                 <tr>
                     <td><%= datas[i].id %></td>
-                    <td><%= datas[i].startTime %></td>
+                    <td><%= datas[i].expire %></td>
                     <td><%= datas[i].timestamp %></td>
-                    <td><%= datas[i].data_quality %></td>
-                    <td><%= JSON.stringify(datas[i].event) %></td>
-                    <td><%= datas[i].level2_event %></td>
+                    <td><%= datas[i].status %></td>
+                    <td><%= datas[i].algo_type %></td>
                 </tr>
                 <% } %>
                 </tbody>

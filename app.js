@@ -15,7 +15,6 @@ AV.initialize(timelineId, timelineKey);
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
-//app.use(cookieParser());
 
 var mapHtml = 'cloud/views/new_map.ejs';
 
@@ -160,6 +159,25 @@ app.get('/detail/:detail', function (req, res) {
                             timestamp: new Date(d0.timestamp).pattern('yyyy-MM-dd HH:mm:ss'),
                             recent_poi_title: d0.pois.pois[0].title,
                             location: d0.location
+                        });
+                    });
+                    //console.log(data);
+                    res.render(detail, data);
+                });
+            break;
+        case 'homeOfficeStatusDetail':
+            // 请求数据
+            getHomeOfficeStatusDetails(userId, startTS, endTS)
+                .then(function (result) {
+                    console.log('count:' + result.length);
+                    result.forEach(function (d) {
+                        var d0 = JSON.parse(JSON.stringify(d));
+                        data.datas.push({
+                            id: d0._id,
+                            expire: new Date(d0.expire).pattern('yyyy-MM-dd HH:mm:ss'),
+                            timestamp: new Date(d0.timestamp).pattern('yyyy-MM-dd HH:mm:ss'),
+                            status: d0.status,
+                            algo_type: d0.algo_type
                         });
                     });
                     //console.log(data);
@@ -595,7 +613,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
     var userLocationFlag = false;
     var userMotionFlag = false;
     var userEventFlag = false;
-    var homeOfficeStatusesFlag = false;
+    var homeOfficeStatusFlag = false;
     // result
     var resultData = {
         category: ['location', 'sensor', 'motion', 'other'],
@@ -607,7 +625,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         userLocation: [],
         userMotion: [],
         userEvent: [],
-        homeOfficeStatuses: []
+        homeOfficeStatus: []
     };
     // timeline赋值
     for (var i = 0; i <= 23; i++) {
@@ -652,7 +670,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
             queryLocationFunctionArray[i] = getUserLocationCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
             queryMotionFunctionArray[i] = getUserMotionCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
             queryEventFunctionArray[i] = getUserEventCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
-            queryHomeOfficeFunctionArray[i] = getHomeOfficeStatusesCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
+            queryHomeOfficeFunctionArray[i] = getHomeOfficeStatusCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
         }
 
         AV.Promise.all(queryLocationFunctionArray).then(function (data) {
@@ -681,9 +699,9 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
 
         AV.Promise.all(queryHomeOfficeFunctionArray).then(function (data) {
             data.forEach(function (d) {
-                resultData.homeOfficeStatuses.push(JSON.parse(d).count);
+                resultData.homeOfficeStatus.push(JSON.parse(d).count);
             });
-            homeOfficeStatusesFlag = true;
+            homeOfficeStatusFlag = true;
             check();
         });
 
@@ -693,7 +711,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
     }
 
     function check() {
-        if (userLocationFlag && userMotionFlag && logFlag && userEventFlag && homeOfficeStatusesFlag) {
+        if (userLocationFlag && userMotionFlag && logFlag && userEventFlag && homeOfficeStatusFlag) {
             callback(resultData);
         }
     }
@@ -775,8 +793,8 @@ var getUserEventCountPerHour = function (userId, startTS, endTS) {
     return requestPromise(url);
 }
 
-var getHomeOfficeStatusesCountPerHour = function (userId, startTS, endTS) {
-    var url = 'http://api.trysenz.com/RefinedLog/api/UserEvents/count?' +
+var getHomeOfficeStatusCountPerHour = function (userId, startTS, endTS) {
+    var url = 'http://api.trysenz.com/RefinedLog/api/HomeOfficeStatuses/count?' +
         'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
 
     return requestPromise(url);
@@ -807,17 +825,26 @@ var getUserEventDetails = function (userId, startTS, endTS) {
     return moGetAll(query, 0, []);
 };
 
+var getHomeOfficeStatusDetails = function (userId, startTS, endTS) {
+    var where = {
+        timestamp: {$gte: startTS, $lt: endTS},
+        user_id: userId
+    };
+    console.log(where);
+
+    var query = HO.find(where);
+
+    return moGetAll(query, 0, []);
+};
+
 function test() {
     console.log('test');
 
     var userId = '5689cf3700b09aa2fdd88d3b';
     var installationId = 'p95f3qTptXDhs2W9USx1MTi7Cc9N6zbW';
-    var startTS = 1453392000000;
-    var endTS = 1453478400000;
+    var startTS = 1453651200000;
+    var endTS = 1453737600000;
 
-    getTotalData(installationId, userId, startTS, endTS, function (result) {
-        console.log(JSON.stringify(result));
-    });
 }
 
-test();
+//test();

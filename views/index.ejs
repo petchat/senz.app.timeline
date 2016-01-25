@@ -98,6 +98,19 @@
                     </div>
                 </div>
             </div>
+            <div class="panel panel-default" id="homeOfficeStatusDiv">
+                <div class="panel-heading">
+                    homeOfficeStatus DB
+                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn" value="homeOfficeStatusDetail">
+                        查看详情
+                    </button>
+                </div>
+                <div class="panel-body">
+                    <div id="homeOfficeStatusChartDiv" style="height:400px;">
+
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -158,10 +171,12 @@
                         loadUserLocationChartData(data);
                         loadUserMotionChartData(data);
                         loadUserEventChartData(data);
+                        loadHomeOfficeStatusChartData(data);
                     } else {
                         $('#userLocationDiv').addClass('hidden');
                         $('#userMotionDiv').addClass('hidden');
                         $('#userEventDiv').addClass('hidden');
+                        $('#homeOfficeStatusDiv').addClass('hidden');
                     }
                 },
                 error: errorAlert
@@ -324,5 +339,27 @@
             }]
         });
     }
+
+    function loadHomeOfficeStatusChartData(data) {
+        $('#homeOfficeStatusChartDiv').removeClass('hidden');
+        var homeOfficeStatusChart = echarts.init(document.getElementById('homeOfficeStatusChartDiv'));
+        homeOfficeStatusChart.setOption({
+            tooltip: {
+                formatter: '{c}'
+            },
+            xAxis: {
+                name: '时间',
+                data: data.xAxis
+            },
+            yAxis: {
+                name: '数量'
+            },
+            series: [{
+                type: 'bar',
+                data: data.homeOfficeStatus
+            }]
+        });
+    }
+
 </script>
 </html>
