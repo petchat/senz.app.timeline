@@ -455,7 +455,7 @@
                                 : Object.keys(userEvent[event_match[index]].event)[0]
                         html +=
                             '<p>'+ 'UserEvent: '  + '<br/>'
-                            + 'objectId: ' + userEvent[event_match[index]].objectId + '<br>'
+                            + 'objectId: ' + userEvent[event_match[index]]._id + '<br>'
                             + 'Event: ' + event
                             + '</p>'
                     }
