@@ -36,59 +36,59 @@ app.get('/index', function (req, res) {
             name: '张亨洋',
             userId: '569ccda100b04bbf1ee10b4a',
             installationId: 'RlX6tbryE7tj58NFo8b7mLpbCQjg27EK'
-        },{
+        }, {
             name: '冯小平',
             userId: '5684fa9e00b009a31af7efcb',
             installationId: 'aoXQRUGjNb25HyG8J3wfIB9APjWp6mOe'
-        },{
+        }, {
             name: '涂腾飞',
             userId: '568a0ca200b01b9f2c08f53d',
             installationId: 'ynnAdkuvdolGEsxhUYIpyL70nJGVDX7b'
-        },{
+        }, {
             name: '刘九思',
             userId: '5684d18200b068a2a955aefc',
             installationId: 'ntK466fF6qCfJeYLwGYJ8od5L8n1gwXD'
-        },{
+        }, {
             name: '郭志毅',
             userId: '5624d68460b2b199f7628914',
             installationId: 'clCdNs1Yd9B0o8oGkkro3s9N1kTpxBVf'
-        },{
+        }, {
             name: '杨蕊',
             userId: '5604e5ce60b2521fb8eb240a',
             installationId: 'K36siTgM8StOW3W5YXguFa2GK2X6kMMx'
-        },{
+        }, {
             name: '徐以彬',
             userId: '56406b4a00b0ee7f57b5c3a3',
             installationId: 'CpMjyBI2oGAjJDfQiehPnzDchlmAWxzA'
-        },{
+        }, {
             name: '贾晨宇',
             userId: '5689cd6d60b2e57ba2c05e4c',
             installationId: 'FXiPOQjv2stL1FAuDieWmSwjlanVEGmf'
-        },{
+        }, {
             name: '张弓',
             userId: '564575ac60b20fc9b99d8d9d',
             installationId: '4Y5KKBtB7TuPrAiQd14xE1EarhJu0EQ0'
-        },{
+        }, {
             name: '贺佳玮',
             userId: '558a5ee7e4b0acec6b941e96',
             installationId: 'sFlPo3d40EXFvQ4sBiqMQ2sPJwf0XnbU'
-        },{
+        }, {
             name: '刘丽',
             userId: '55f788f4ddb25bb7713125ef',
             installationId: 'lq1V2vWODJMDOoplWPHMH3HLFJuJW6kL'
-        },{
+        }, {
             name: '张子帅',
             userId: '55c1e2d900b0ee7fd66e8ea3',
             installationId: 'ipAujsbPwifG5EMPcec9gCXeVSFyp2EN'
-        },{
+        }, {
             name: '李轲',
             userId: '5653c88e00b0e772838cd61b',
             installationId: 'k5luekqGhj9JUYnG7jIJRIPL5tNn0czA'
-        },{
+        }, {
             name: '豆豆',
             userId: '5682580d00b0f9a1f22748c7',
             installationId: 'yKJpjUD6ouU8oUnX3Sq8BO03AWrW4QQy'
-        },{
+        }, {
             name: '梦欣',
             userId: '5684d3d660b2b60f65d84285',
             installationId: 'h8CQnD4g3VtojKIdymYEcRAIMidOH6wG'
@@ -591,11 +591,13 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
     var queryLocationFunctionArray = [];
     var queryMotionFunctionArray = [];
     var queryEventFunctionArray = [];
+    var queryHomeOfficeFunctionArray = [];
     // flag
     var logFlag = false;
     var userLocationFlag = false;
     var userMotionFlag = false;
     var userEventFlag = false;
+    var homeOfficeStatusesFlag = false;
     // result
     var resultData = {
         category: ['location', 'sensor', 'motion', 'other'],
@@ -606,7 +608,8 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         other: [],
         userLocation: [],
         userMotion: [],
-        userEvent: []
+        userEvent: [],
+        homeOfficeStatuses: []
     };
     // timeline赋值
     for (var i = 0; i <= 23; i++) {
@@ -651,6 +654,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
             queryLocationFunctionArray[i] = getUserLocationCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
             queryMotionFunctionArray[i] = getUserMotionCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
             queryEventFunctionArray[i] = getUserEventCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
+            queryHomeOfficeFunctionArray[i] = getHomeOfficeStatusesCountPerHour(userId, startTS + i * oneHour, startTS + (i + 1) * oneHour);
         }
 
         AV.Promise.all(queryLocationFunctionArray).then(function (data) {
@@ -677,13 +681,21 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
             check();
         });
 
+        AV.Promise.all(queryHomeOfficeFunctionArray).then(function (data) {
+            data.forEach(function (d) {
+                resultData.homeOfficeStatuses.push(JSON.parse(d).count);
+            });
+            homeOfficeStatusesFlag = true;
+            check();
+        });
+
     } else {
         userLocationFlag = userMotionFlag = userEventFlag = true;
         check();
     }
 
     function check() {
-        if (userLocationFlag && userMotionFlag && logFlag && userEventFlag) {
+        if (userLocationFlag && userMotionFlag && logFlag && userEventFlag && homeOfficeStatusesFlag) {
             callback(resultData);
         }
     }
@@ -765,6 +777,13 @@ var getUserEventCountPerHour = function (userId, startTS, endTS) {
     return requestPromise(url);
 }
 
+var getHomeOfficeStatusesCountPerHour = function (userId, startTS, endTS) {
+    var url = 'http://api.trysenz.com/RefinedLog/api/UserEvents/count?' +
+        'where[user_id]=' + userId + '&where[and][0][timestamp][gt]=' + startTS + '&where[and][1][timestamp][lt]=' + endTS;
+
+    return requestPromise(url);
+}
+
 var getUserLocationDetails = function (userId, startTS, endTS) {
     var where = {
         timestamp: {$gte: startTS, $lt: endTS},
@@ -793,13 +812,13 @@ var getUserEventDetails = function (userId, startTS, endTS) {
 function test() {
     console.log('test');
 
-    var userId = '569ccda100b04bbf1ee10b4a';
-    var installationId = 'RlX6tbryE7tj58NFo8b7mLpbCQjg27EK';
+    var userId = '5689cf3700b09aa2fdd88d3b';
+    var installationId = 'p95f3qTptXDhs2W9USx1MTi7Cc9N6zbW';
     var startTS = 1453392000000;
     var endTS = 1453478400000;
 
-    getTotalData(installationId, userId, startTS, endTS, function (data) {
-        console.log(data);
+    getTotalData(installationId, userId, startTS, endTS, function (result) {
+        console.log(JSON.stringify(result));
     });
 }
 
