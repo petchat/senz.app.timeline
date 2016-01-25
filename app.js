@@ -170,18 +170,26 @@ app.get('/detail/:detail', function (req, res) {
             getHomeOfficeStatusDetails(userId, startTS, endTS)
                 .then(function (result) {
                     console.log('count:' + result.length);
+                    var query = [];
                     result.forEach(function (d) {
                         var d0 = JSON.parse(JSON.stringify(d));
                         data.datas.push({
-                            id: d0._id,
-                            expire: new Date(d0.expire).pattern('yyyy-MM-dd HH:mm:ss'),
-                            timestamp: new Date(d0.timestamp).pattern('yyyy-MM-dd HH:mm:ss'),
+                            ul_id: d0.user_location_id,
+                            created_time: new Date(d0.createdTs).pattern('yyyy-MM-dd HH:mm:ss'),
+                            timestamp: d0.timestamp,
+                            timestamp_time: new Date(d0.timestamp).pattern('yyyy-MM-dd HH:mm:ss'),
                             status: d0.status,
-                            algo_type: d0.algo_type
+                            diff: (d0.createdTs - d0.timestamp)
                         });
+                        query.push(getUserLocationDetailsById(d0.user_location_id));
                     });
-                    //console.log(data);
-                    res.render(detail, data);
+                    AV.Promise.all(query).then(function (result1) {
+                        for (var i = 0; i < result1.length; i++) {
+                            data.datas[i].ul_timestamp = result1[i][0].get('timestamp');
+                            data.datas[i].ul_created_time = new Date(result1[i][0].get('createdTs')).pattern('yyyy-MM-dd HH:mm:ss');
+                        }
+                        res.render(detail, data);
+                    })
                 });
             break;
     }
@@ -832,7 +840,16 @@ var getHomeOfficeStatusDetails = function (userId, startTS, endTS) {
     };
     console.log(where);
 
-    var query = HO.find(where);
+    var query = HO.find(where).populate('location');
+
+    return moGetAll(query, 0, []);
+};
+var getUserLocationDetailsById = function (id) {
+    var where = {
+        _id: id
+    };
+
+    var query = UL.find(where);
 
     return moGetAll(query, 0, []);
 };

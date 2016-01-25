@@ -20,21 +20,27 @@
             <table class="table table-striped">
                 <thead>
                 <tr>
-                    <th>id</th>
-                    <th>expire</th>
-                    <th>timestamp</th>
+                    <th>ul_id</th>
                     <th>status</th>
-                    <th>algo_type</th>
+                    <th>created_time</th>
+                    <th>timestamp_time</th>
+                    <th>timestamp</th>
+                    <th>ul_created_time</th>
+                    <th>ul_timestamp</th>
+                    <th>diff(ms)</th>
                 </tr>
                 </thead>
                 <tbody>
                 <% for(var i in datas){ %>
                 <tr>
-                    <td><%= datas[i].id %></td>
-                    <td><%= datas[i].expire %></td>
-                    <td><%= datas[i].timestamp %></td>
+                    <td><%= datas[i].ul_id %></td>
                     <td><%= datas[i].status %></td>
-                    <td><%= datas[i].algo_type %></td>
+                    <td><%= datas[i].created_time %></td>
+                    <td><%= datas[i].timestamp_time %></td>
+                    <td><%= datas[i].timestamp %></td>
+                    <td><%= datas[i].ul_created_time %></td>
+                    <td><%= datas[i].ul_timestamp %></td>
+                    <td><%= datas[i].diff %></td>
                 </tr>
                 <% } %>
                 </tbody>
