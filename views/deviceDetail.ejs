@@ -15,7 +15,7 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-12">
-            userId : <%= userId %>
+            installationId : <%= installationId %>
             <br>
             platform : <%= platform %>
             <br>
@@ -34,7 +34,11 @@
                 <tr>
                     <td><%= datas[i].hour %></td>
                     <td><%= datas[i].extra %></td>
-                    <td><%= datas[i].upload-count %></td>
+                    <% if(datas[i]['upload-count'] != undefined){ %>
+                    <td><%= JSON.stringify(datas[i]['upload-count']) %></td>
+                    <% }else{ %>
+                    <td></td>
+                    <% } %>
                 </tr>
                 <% } %>
                 </tbody>

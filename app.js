@@ -198,9 +198,6 @@ app.get('/detail/:detail', function (req, res) {
                 data.percent = result.percent;
                 data.platform = result.platform;
                 data.datas = result.hours;
-                for(var i=0;i<data.datas.length;i++){
-
-                }
                 console.log(JSON.stringify(data));
                 res.render(detail, data);
             });
