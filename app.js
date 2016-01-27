@@ -195,10 +195,12 @@ app.get('/detail/:detail', function (req, res) {
         case 'deviceDetail':
             // 请求数据
             getUserDeviceYesterday(installationId, startTS, endTS, function (result) {
-                //console.log(JSON.stringify(result));
                 data.percent = result.percent;
                 data.platform = result.platform;
                 data.datas = result.hours;
+                for(var i=0;i<data.datas.length;i++){
+
+                }
                 console.log(JSON.stringify(data));
                 res.render(detail, data);
             });
@@ -725,7 +727,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         });
 
     } else {
-        userLocationFlag = userMotionFlag = userEventFlag = homeOfficeStatusFlag=true;
+        userLocationFlag = userMotionFlag = userEventFlag = homeOfficeStatusFlag = true;
         check();
     }
 
