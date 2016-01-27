@@ -192,6 +192,17 @@ app.get('/detail/:detail', function (req, res) {
                     })
                 });
             break;
+        case 'deviceDetail':
+            // 请求数据
+            getUserDeviceYesterday(installationId, startTS, endTS, function (result) {
+                //console.log(JSON.stringify(result));
+                data.percent = result.percent;
+                data.platform = result.platform;
+                data.datas = result.hours;
+                console.log(JSON.stringify(data));
+                res.render(detail, data);
+            });
+            break;
     }
 });
 
@@ -714,7 +725,7 @@ var getTotalData = function (installationId, userId, startTS, endTS, callback) {
         });
 
     } else {
-        userLocationFlag = userMotionFlag = userEventFlag = true;
+        userLocationFlag = userMotionFlag = userEventFlag = homeOfficeStatusFlag=true;
         check();
     }
 
@@ -815,7 +826,6 @@ var getUserLocationDetails = function (userId, startTS, endTS) {
     };
     console.log(where);
 
-    //var query = UL.find(where).select({poiProbLv1: 0, poiProbLv2: 0});
     var query = UL.find(where);
 
     return moGetAll(query, 0, []);
@@ -844,6 +854,7 @@ var getHomeOfficeStatusDetails = function (userId, startTS, endTS) {
 
     return moGetAll(query, 0, []);
 };
+
 var getUserLocationDetailsById = function (id) {
     var where = {
         _id: id
@@ -853,6 +864,28 @@ var getUserLocationDetailsById = function (id) {
 
     return moGetAll(query, 0, []);
 };
+
+var getUserDeviceYesterday = function (installationId, startTS, endTS, callback) {
+    var installation = {
+        __type: 'Pointer',
+        className: '_Installation',
+        objectId: installationId
+    };
+    var query = new AV.Query('Log');
+    query.equalTo('installation', installation);
+    query.greaterThanOrEqualTo('timestamp', startTS);
+    query.lessThan('timestamp', endTS);
+    query.equalTo('type', 'statistic');
+    query.select('value');
+    _AvFindAll(query).then(function (result) {
+        var value = {};
+        // 转换数据
+        if (result.length != 0) {
+            value = result[0].attributes.value;
+        }
+        callback(value);
+    });
+}
 
 function test() {
     console.log('test');
@@ -864,4 +897,4 @@ function test() {
 
 }
 
-//test();
+test();

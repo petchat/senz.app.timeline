@@ -55,6 +55,9 @@
             <div class="panel panel-default" id="logDiv">
                 <div class="panel-heading">
                     Log DB
+                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn"
+                            value="deviceDetail">Device详情
+                    </button>
                 </div>
                 <div class="panel-body">
                     <div id="logChartDiv" style="height:400px;">
@@ -62,6 +65,21 @@
                     </div>
                 </div>
             </div>
+            <!--<div class="panel panel-default" id="deviceYesterdayDiv">-->
+            <!--<div class="panel-heading">-->
+            <!--DeviceYesterday Statistic-->
+            <!--</div>-->
+            <!--<div class="panel-body">-->
+            <!--<div>-->
+            <!--platform : <span id="platform"></span>-->
+            <!--<br>-->
+            <!--percent : <span id="percent"></span>-->
+            <!--</div>-->
+            <!--<div id="deviceYesterdayChartDiv" style="height:400px;">-->
+
+            <!--</div>-->
+            <!--</div>-->
+            <!--</div>-->
             <div class="panel panel-default" id="userLocationDiv">
                 <div class="panel-heading">
                     UserLocation DB
@@ -100,8 +118,9 @@
             </div>
             <div class="panel panel-default" id="homeOfficeStatusDiv">
                 <div class="panel-heading">
-                    homeOfficeStatus DB
-                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn" value="homeOfficeStatusDetail">
+                    HomeOfficeStatus DB
+                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn"
+                            value="homeOfficeStatusDetail">
                         查看详情
                     </button>
                 </div>
@@ -163,8 +182,10 @@
 
                     if (installationId != '') {
                         loadLogChartData(data);
+//                        loadDeviceYesterdayChartData(data);
                     } else {
                         $('#logDiv').addClass('hidden');
+//                        $('#deviceYesterdayDiv').addClass('hidden');
                     }
 
                     if (userId != '') {
@@ -276,6 +297,45 @@
             }]
         });
     }
+
+    //    function loadDeviceYesterdayChartData(data) {
+    //        $('#deviceYesterdayDiv').removeClass('hidden');
+    //        $('#percent').text(data.device.percent);
+    //        $('#platform').text(data.device.platform);
+    ////        var deviceYesterdayChart = echarts.init(document.getElementById('deviceYesterdayChartDiv'));
+    ////        deviceYesterdayChart.setOption({
+    ////            tooltip: {
+    ////                formatter: '{c}'
+    ////            },
+    ////            legend: {
+    ////                data: data.category
+    ////            },
+    ////            xAxis: {
+    ////                name: '时间',
+    ////                data: data.xAxis
+    ////            },
+    ////            yAxis: {
+    ////                name: '数量'
+    ////            },
+    ////            series: [{
+    ////                name: 'location',
+    ////                type: 'bar',
+    ////                data: data.location
+    ////            }, {
+    ////                name: 'sensor',
+    ////                type: 'bar',
+    ////                data: data.sensor
+    ////            }, {
+    ////                name: 'motion',
+    ////                type: 'bar',
+    ////                data: data.motion
+    ////            }, {
+    ////                name: 'other',
+    ////                type: 'bar',
+    ////                data: data.other
+    ////            }]
+    ////        });
+    //    }
 
     function loadUserLocationChartData(data) {
         $('#userLocationDiv').removeClass('hidden');
