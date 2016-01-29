@@ -7,7 +7,7 @@
         body, html, #allmap {
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            /*overflow: hidden;*/
             margin: 0;
         }
     </style>
@@ -19,6 +19,11 @@
     <title>地图展示</title>
 </head>
 <body>
+<input type="checkbox" value="Activity"/> Activity
+<input type="checkbox" value="HomeOffice"/> HomeOffice
+<input type="checkbox" value="Event"/> Event
+<input type="checkbox" value="Subway"/> Subway
+
 <div id="allmap"></div>
 <input type="button" value="开启" onclick="myDis.open()"/>
 <input type="button" value="关闭" onclick="myDis.close()"/>
@@ -26,52 +31,44 @@
 </html>
 <script type="text/javascript">
 
-    param = <%- JSON.stringify(data) %>
-    console.log('param from backend:', param)
+    param = <%- JSON.stringify(data) %>;
+    console.log('param from backend:', param);
 
     // DAO
-    //    var userlocationId = 'u7jwfvuoi3to87qtkmurvxgjdm5tmzvgpooo0d8wfm0dfdko'
-    //    var userlocationKey = 'w6llno78ayu4fewyvgwr6h3v7zjqpz4g262g4htrtvw7jgdg'
-    var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81'
-    var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia'
+    var timelineId = 'pin72fr1iaxb7sus6newp250a4pl2n5i36032ubrck4bej81';
+    var timelineKey = 'qs4o5iiywp86eznvok4tmhul360jczk7y67qj0ywbcq35iia';
 
-    AV.initialize(timelineId, timelineKey)
-    console.log('av initialized')
+    AV.initialize(timelineId, timelineKey);
+    console.log('av initialized');
 
     var AVConvertAdaptor = function (avObjects) {
-        var promise = new AV.Promise()
-        var points = []
+        var promise = new AV.Promise();
+        var points = [];
         avObjects.forEach(function (avObject) {
-            var loc = avObject.get('location')
-            var point = {}
-            point.lat = loc.lat
-            point.lng = loc.lng
-
-            points.push(point)
-        })
-
+            var loc = avObject.get('location');
+            var point = {};
+            point.lat = loc.lat;
+            point.lng = loc.lng;
+            points.push(point);
+        });
 
         converter(points).then(function (result) {
-
             for (var i = 0; i < result.length; i++) {
-
                 var point = new AV.GeoPoint({
                     latitude: result[i][0],
                     longitude: result[i][1]
                 });
-
-                avObjects[i].set('location', point)
+                avObjects[i].set('location', point);
             }
+            promise.resolve(avObjects);
+        });
 
-            promise.resolve(avObjects)
-        })
-
-        return promise
-    }
+        return promise;
+    };
 
 
     var converter = function (points) {
-        var promise = new AV.Promise()
+        var promise = new AV.Promise();
         var new_points = [];
         var i = 0;
         var parseCallback = function (point) {
@@ -80,22 +77,18 @@
             if (i < points.length) {
                 BMap.Convertor.translate(points[i], 2, parseCallback);
             } else {
-
-//                    callback(new_points);
-
-                var coors = []
+                var coors = [];
                 new_points.forEach(function (point) {
-//                    coors.push([point.lat, point.lng])
-                    coors.push([point.lat, point.lng])
-                })
+                    coors.push([point.lat, point.lng]);
+                });
 
-                console.log('convert finished, length:', coors.length)
-                promise.resolve(coors)
+                console.log('convert finished, length:', coors.length);
+                promise.resolve(coors);
             }
         };
         BMap.Convertor.translate(points[i], 2, parseCallback);
 
-        return promise
+        return promise;
     };
 
 
@@ -132,95 +125,70 @@
     };
 
     var getAvUserLocation = function (uid, tsStart, tsEnd) {
-        console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd)
+        console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd);
 
-        var promise = new AV.Promise()
+        var promise = new AV.Promise();
 
-        var UserLocation = AV.Object.extend('UserLocation')
-        var User = AV.Object.extend('_User')
+        var UserLocation = AV.Object.extend('UserLocation');
+        var User = AV.Object.extend('_User');
 
-        var query = new AV.Query(UserLocation)
+        var query = new AV.Query(UserLocation);
 
-        var up = new User()
-        up.id = uid
+        var up = new User();
+        up.id = uid;
 
-        query.equalTo('user', up)
-        query.greaterThan('timestamp', tsStart)
-        query.lessThan('timestamp', tsEnd)
+        query.equalTo('user', up);
+        query.greaterThan('timestamp', tsStart);
+        query.lessThan('timestamp', tsEnd);
 
-        var raw = null
+        var raw = null;
 
         _findAll(query).then(function (result) {
-            console.log('user location length:', result.length)
-            promise.resolve(result)
+            console.log('user location length:', result.length);
+            promise.resolve(result);
 
         })
-        return promise
+        return promise;
     }
 
     var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
 
-        var promise = new AV.Promise()
+        var promise = new AV.Promise();
 
-        var HomeOfficeStatus = AV.Object.extend('HomeOfficeStatus')
-        var User = AV.Object.extend('_User')
+        var HomeOfficeStatus = AV.Object.extend('HomeOfficeStatus');
+        var User = AV.Object.extend('_User');
 
-        var query = new AV.Query(HomeOfficeStatus)
-        var up = new User()
-        up.id =  uid
+        var query = new AV.Query(HomeOfficeStatus);
+        var up = new User();
+        up.id = uid;
 
-        query.equalTo('user', up)
-        query.greaterThanOrEqualTo('timestamp', tsStart)
-        query.lessThanOrEqualTo('timestamp', tsEnd)
+        query.equalTo('user', up);
+        query.greaterThanOrEqualTo('timestamp', tsStart);
+        query.lessThanOrEqualTo('timestamp', tsEnd);
 
-        return _findAll(query)
+        return _findAll(query);
     }
 
-    //    var getMoUserLocation = function (uid, tsStart, tsEnd) {
+    //    var getLogTrace = function (installationId, tsStart, tsEnd) {
     //        var promise = new AV.Promise()
     //
-    //
-    //        var where = 'filter[where][and][0][where][uid]=' + uid +
-    //                '&filter[where][and][1][timestamp][gt]=' + tsStart +
-    //                '&filter[where][and][2][timestamp][lt]=' + tsEnd
-    //
-    //        var fields = 'filter[fields][location]=true' +
-    //                '&filter[fields][timestamp]=true'
-    //
-    //        var path = 'http://119.254.111.40:3000/api/UserLocations?filter=' +
-    //                where + '&' + fields
-    //
-    //        $.getJSON(path, function (data) {
-    //            if (data) {
-    //                promise.resolve(data)
-    //            } else {
-    //                promise.reject('load failed:', path)
-    //            }
-    //        })
-    //
-    //        return promise
     //    }
 
-    var getLogTrace = function (installationId, tsStart, tsEnd) {
-        var promise = new AV.Promise()
-
-    }
-
     var getUPois = function (uid) {
-        var promise = new AV.Promise()
-        var UPoi = AV.Object.extend('UPoi')
-        var User = AV.Object.extend('_User')
+        var promise = new AV.Promise();
+        var UPoi = AV.Object.extend('UPoi');
+        var User = AV.Object.extend('_User');
 
-        var query = new AV.Query(UPoi)
+        var query = new AV.Query(UPoi);
 
-        var up = new User()
-        up.id = uid
+        var up = new User();
+        up.id = uid;
 
-        query.equalTo('user', up)
+        query.equalTo('user', up);
 
         _findAll(query).then(function (result) {
-            console.log('u_poi length:', result.length)
-            promise.resolve(result)
+            console.log('u_poi length:', result.length);
+            promise.resolve(result);
         })
 
         return promise
@@ -244,21 +212,18 @@
 
     var getMoUPoiEvi = function (upois) {
 
-        var promise = new AV.Promise()
-
-        var where = 'filter[where][and][0][where][uid]=' + uid
-
-        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' +
-                where
+        var promise = new AV.Promise();
+        var where = 'filter[where][and][0][where][uid]=' + uid;
+        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' + where;
 
         $.getJSON(path, function (data) {
             if (data) {
-                promise.resolve(data)
+                promise.resolve(data);
             } else {
-                promise.reject('load failed:', path)
+                promise.reject('load failed:', path);
             }
         })
-        return promise
+        return promise;
     }
 
 
@@ -268,15 +233,14 @@
             evidences = []
         }
 
-
         var iconUri = '/images/evidence_icon.png'
         var evidenceIcon = new BMap.Icon(iconUri, new BMap.Size(16, 16));
 
         evidences.forEach(function (evidence) {
             var loc = evidence.location
             // evidence is marked user location in mongo
-            var coor = [loc.lat, loc.lng]
-            var point = new BMap.Point(loc.lat, loc.lng)
+            var coor = [loc.lat, loc.lng];
+            var point = new BMap.Point(loc.lat, loc.lng);
 
             var marker = new BMap.Marker(point, {icon: evidenceIcon});  // 创建标注
             var date = new Date(evidence.timestamp)
@@ -326,15 +290,15 @@
         })
     }
 
-    var addIconLegend = function(map, x, y, icon, text){
+    var addIconLegend = function (map, x, y, icon, text) {
 
-        function ZoomControl(){
+        function ZoomControl() {
             this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
             this.defaultOffset = new BMap.Size(x, y);
         }
 
         ZoomControl.prototype = new BMap.Control();
-        ZoomControl.prototype.initialize = function(map){
+        ZoomControl.prototype.initialize = function (map) {
             var div = document.createElement("div");
             var img = document.createElement("img")
             var txt = document.createElement("label")
@@ -354,12 +318,11 @@
     };
 
     // END OF DAO
-    var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
-        var markers = []
-
+//    var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
+    var addUserLocation = function (map, userLocations, ulIds, showAll) {
         if (userLocations === null) {
-            userLocations = []
-            alert('user has no location data within time range')
+            userLocations = [];
+            alert('user has no location data within time range');
         }
 
         var iconblue = new BMap.Icon('/images/flag_blue.png', new BMap.Size(32, 44));
@@ -372,121 +335,119 @@
         addIconLegend(map, 10, 110, '/images/flag_green.png', 'Event');
         addIconLegend(map, 10, 160, '/images/subway.png', 'Subway');
 
-        event_match.length = 0
-        activity_match.length = 0
-        home_office_match.length = 0
-        event_location_id.length = 0
-        activity_location_id.length = 0
+        event_match.length = 0;
+        activity_match.length = 0;
+        home_office_match.length = 0;
+        event_location_id.length = 0;
+        activity_location_id.length = 0;
         home_office_location_id.length = 0;
         var index = -1;
 
-        var test = []
+//        var test = []
         userLocations.forEach(function (userLocation) {
             if (ulIds.indexOf(userLocation._id) > -1 || showAll) {
-                var loc = userLocation.location
-                var coor = [loc.lat, loc.lng]
+                var loc = userLocation.location;
+                var coor = [loc.lat, loc.lng];
                 var point = new BMap.Point(loc.lng, loc.lat);
 
-                userEvent.forEach(function (event, index){
+                userEvent.forEach(function (event, index) {
                     var evidence_list = event.evidence_list || [];
-                    evidence_list.forEach(function(evidence){
-                        if(userLocation._id == evidence.location_id){
+                    evidence_list.forEach(function (evidence) {
+                        if (userLocation._id == evidence.location_id) {
                             event_match.push(index);
                             event_location_id.push(userLocation._id);
                         }
                     })
                 });
 
-                userActivity.forEach(function (activity, index){
+                userActivity.forEach(function (activity, index) {
                     var evidence_list = activity.evidence || [];
-                    evidence_list.forEach(function(evidence){
-                        if(userLocation._id == evidence.location_id){
+                    evidence_list.forEach(function (evidence) {
+                        if (userLocation._id == evidence.location_id) {
                             activity_match.push(index);
                             activity_location_id.push(userLocation._id);
                         }
                     })
                 });
 
-                homeOfficeStatus.forEach(function (home_office, index){
-                    if(userLocation._id == home_office.user_location_id){
+                homeOfficeStatus.forEach(function (home_office, index) {
+                    if (userLocation._id == home_office.user_location_id) {
                         home_office_match.push(index);
                         home_office_location_id.push(userLocation._id);
                     }
                 });
 
                 var marker = new BMap.Marker(point);
-
-                if((index = activity_location_id.indexOf(userLocation._id)) >= 0){
-                    marker = new BMap.Marker(point, {icon: iconblue})
-                }else if((index = home_office_location_id.indexOf(userLocation._id)) >= 0 &&
-                        homeOfficeStatus[home_office_match[index]].status != 'unknown_status'){
-                    marker = new BMap.Marker(point, {icon: iconyellow})
-                }else if((index = event_location_id.indexOf(userLocation._id)) >= 0
-                        && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
-                    if(userEvent[event_match[index]].isOnSubway){
+                if ((index = activity_location_id.indexOf(userLocation._id)) >= 0) {
+                    marker = new BMap.Marker(point, {icon: iconblue});
+                } else if ((index = home_office_location_id.indexOf(userLocation._id)) >= 0 &&
+                        homeOfficeStatus[home_office_match[index]].status != 'unknown_status') {
+                    marker = new BMap.Marker(point, {icon: iconyellow});
+                } else if ((index = event_location_id.indexOf(userLocation._id)) >= 0
+                        && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown') {
+                    if (userEvent[event_match[index]].isOnSubway) {
                         marker = new BMap.Marker(point, {icon: iconsubway});
-                    }else{
+                    } else {
                         marker = new BMap.Marker(point, {icon: icongreen});
                     }
                 }
 
                 var date = new Date(userLocation.timestamp)
-
                 marker.addEventListener("click", function (e) {
-                    if (userLocation._id in infoGbULID) {
-                        var info = infoGbULID[userLocation.id]
-                        html = '<p>' + info + '<br/>'
-                                + '<b>user location info:</b>' + '<br/>'
-                                + date.toString() + '<br /> '
-                                + userLocation.timestamp + '<br/>'
-                                + coor + '<br/>'
-                                + userLocation._id + '</p>'
-                    } else {
+//                    if (userLocation._id in infoGbULID) {
+//                        var info = infoGbULID[userLocation.id]
+//                        html = '<p>' + info + '<br/>'
+//                                + '<b>user location info:</b>' + '<br/>'
+//                                + date.toString() + '<br /> '
+//                                + userLocation.timestamp + '<br/>'
+//                                + coor + '<br/>'
+//                                + userLocation._id + '</p>'
+//                    } else {
                         html = '<p>' + 'user location info:' + '<br/>'
                                 + date.toString() + '<br /> '
                                 + userLocation.timestamp + '<br/>'
                                 + coor + '<br/>'
-                                + userLocation._id + '</p>'
-                    }
+                                + userLocation._id + '</p>';
+//                    }
 
-                    if((index = event_location_id.indexOf(userLocation._id)) >= 0
-                            && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown'){
+                    if ((index = event_location_id.indexOf(userLocation._id)) >= 0
+                            && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown') {
                         var event = userEvent[event_match[index]].isOnSubway ? "contextTakingSubway"
                                 : Object.keys(userEvent[event_match[index]].event)[0]
                         html +=
-                            '<p>'+ 'UserEvent: '  + '<br/>'
-                            + 'objectId: ' + userEvent[event_match[index]]._id + '<br>'
-                            + 'Event: ' + event
-                            + '</p>'
+                                '<p>' + 'UserEvent: ' + '<br/>'
+                                + 'objectId: ' + userEvent[event_match[index]]._id + '<br>'
+                                + 'Event: ' + event
+                                + '</p>';
                     }
-                    if((index = activity_location_id.indexOf(userLocation._id)) >= 0){
+                    if ((index = activity_location_id.indexOf(userLocation._id)) >= 0) {
                         html +=
-                            '<p>'+ 'UserActivity: '  + '<br/>'
-                            + 'objectId: ' + userActivity[activity_match[index]].objectId + '<br>'
-                            + 'category: ' + userActivity[activity_match[index]].matched_activities[0].category + '<br>'
-                            + 'name: ' + userActivity[activity_match[index]].matched_activities[0].name + '<br>'
-                            + 'event_id: ' + userActivity[activity_match[index]].matched_activities[0].event_id + '<br>'
-                            + '</p>'
+                                '<p>' + 'UserActivity: ' + '<br/>'
+                                + 'objectId: ' + userActivity[activity_match[index]].objectId + '<br>'
+                                + 'category: ' + userActivity[activity_match[index]].matched_activities[0].category + '<br>'
+                                + 'name: ' + userActivity[activity_match[index]].matched_activities[0].name + '<br>'
+                                + 'event_id: ' + userActivity[activity_match[index]].matched_activities[0].event_id + '<br>'
+                                + '</p>';
                     }
 
-                    if((index = home_office_location_id.indexOf(userLocation._id)) >= 0
-                       && homeOfficeStatus[home_office_match[index]].status != 'unknown_status'){
+                    if ((index = home_office_location_id.indexOf(userLocation._id)) >= 0
+                            && homeOfficeStatus[home_office_match[index]].status != 'unknown_status') {
                         html +=
-                            '<p>'+ 'HomeOfficeStatus: ' + '<br>'
-                            + 'objectId: ' + homeOfficeStatus[home_office_match[index]]._id + '<br>'
-                            + 'status: ' + homeOfficeStatus[home_office_match[index]].status
-                            + '</p>'
+                                '<p>' + 'HomeOfficeStatus: ' + '<br>'
+                                + 'objectId: ' + homeOfficeStatus[home_office_match[index]]._id + '<br>'
+                                + 'status: ' + homeOfficeStatus[home_office_match[index]].status
+                                + '</p>';
                     }
                     this.openInfoWindow(new BMap.InfoWindow(html));
                 });
 
-                markers.push(marker)
+                userMarkers.push(marker);
             }
-        })
+        });
 
-        markers.forEach(function (marker) {
-            map.addOverlay(marker)
-        })
+        userMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
 
     }
 
@@ -494,13 +455,13 @@
     var addUPOI = function (map, uPois) {
 
         if (uPois === null) {
-            uPois = []
-            alert('user has not u_pois')
+            uPois = [];
+            alert('user has not u_pois');
         }
 
 //        var iconUri = 'http://google.com'
 //        var iconUri = 'https://www.baidu.com/img/bdlogo.png'
-        var iconUri = '/images/u_poi_icon.png'
+        var iconUri = '/images/u_poi_icon.png';
         var upoiIcon = new BMap.Icon(iconUri, new BMap.Size(40, 40));
 
         uPois.forEach(function (upoi) {
@@ -513,24 +474,28 @@
 
             marker.addEventListener("click", function (e) {
 
-                if (upoi.id in infogbupoiid) {
-                    var info = infogbupoiid[upoi.id]
-
-                    var html = '<p>' + info + '<br />'
-                            + '<b>' + poi_title + '</b> <br />'
-                            + coor + '<br/>'
-                            + upoi.id + '</p>'
-                    this.openInfoWindow(new BMap.InfoWindow(html));
-                } else {
+//                if (upoi.id in infogbupoiid) {
+//                    var info = infogbupoiid[upoi.id]
+//
+//                    var html = '<p>' + info + '<br />'
+//                            + '<b>' + poi_title + '</b> <br />'
+//                            + coor + '<br/>'
+//                            + upoi.id + '</p>'
+//                    this.openInfoWindow(new BMap.InfoWindow(html));
+//                } else {
                     var html = '<p>' + poi_title + '<br />'
                             + coor + '<br/>'
                             + upoi.id + '</p>'
                     this.openInfoWindow(new BMap.InfoWindow(html))
-                }
+//                }
             });
 
-            map.addOverlay(marker)
-        })
+            upoiMarkers.push(marker);
+        });
+
+        upoiMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
 
     }
 
@@ -562,89 +527,89 @@
     //    map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
     map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
 
-    var infogbulid = {
-        '55becee5e4b0d96749da3eb9': '<b>near u_poi info:</b>  <br/>' +
-        'Home, avg_start: 10:22 AM, avg_end: 9:08 PM, visit_frequency: 0.91 <br/>' +
-        'status: Leaving Home',
+//    var infogbulid = {
+//        '55becee5e4b0d96749da3eb9': '<b>near u_poi info:</b>  <br/>' +
+//        'Home, avg_start: 10:22 AM, avg_end: 9:08 PM, visit_frequency: 0.91 <br/>' +
+//        'status: Leaving Home',
+//
+//        '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
+//        'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
+//        'status: Arrive Workplace',
+//
+//        '55b7a9a300b0df8ab5666093': '<b>u_poi info:</b> <br/>' +
+//        "浦东国际机场, visit_frequency: 0.01",
+//        '55a5de61e4b0e11f62b2b948': '<b>u_poi info:</b> <br/>' +
+//        "北京邮电大学, avg_duration: 5.1 hours"
+//    }
 
-        '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
-        'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
-        'status: Arrive Workplace',
+//    var infogbupoiid = {
+//
+//        '55baf12c00b0ee7fe0ff65d4': '<b>u_poi info:</b> <br/>' +
+//        'Workplace, avg_start: 11:04 AM, avg_end: 8:50 PM, visit_frequency: 0.81',
+//
+//        '55cf10d800b0de09aaea58e3': '<b>u_poi info:</b> <br/>' +
+//        'Frequent visit place, avg_start: 9:02 PM, avg_end: 9:14 PM, visit_frequency: 0.43',
+//
+//        '55baf12b00b0ee7fe0ff65c6': '<b>u_poi info:</b> <br/>' +
+//        'Home, avg_start: 10:51 PM, avg_end: 10:22 AM, visit_frequency: 0.73'
+//    }
 
-        '55b7a9a300b0df8ab5666093': '<b>u_poi info:</b> <br/>' +
-        "浦东国际机场, visit_frequency: 0.01",
-        '55a5de61e4b0e11f62b2b948': '<b>u_poi info:</b> <br/>' +
-        "北京邮电大学, avg_duration: 5.1 hours"
-    }
+    //    var chaoyang = '55bda7b900b0fac2af6a33de'
+    //    var shaoyao = '559e280ae4b0d4d1b2104c16'
+    //    var shanghai = '558a5ee7e4b0acec6b941e96'
+    //    var tsinghua = '55c0488300b0c8c194856f78'
 
-    var infogbupoiid = {
+    //    var workList = ['55becee5e4b0d96749da3eb9',
+    //        '55bf000400b0cb9c41028ff2',
+    //        '55bf004000b042e60d1ea600',
+    //        '55bf00b9e4b0ea385d97c62e',
+    //        '55bf5fe660b28847cdfc1f50',
+    //        '55bf69aa00b0cfba23c10fa6',
+    //        '55bed663e4b0d96749dad632'
+    //    ]
 
-        '55baf12c00b0ee7fe0ff65d4': '<b>u_poi info:</b> <br/>' +
-        'Workplace, avg_start: 11:04 AM, avg_end: 8:50 PM, visit_frequency: 0.81',
-
-        '55cf10d800b0de09aaea58e3': '<b>u_poi info:</b> <br/>' +
-        'Frequent visit place, avg_start: 9:02 PM, avg_end: 9:14 PM, visit_frequency: 0.43',
-
-        '55baf12b00b0ee7fe0ff65c6': '<b>u_poi info:</b> <br/>' +
-        'Home, avg_start: 10:51 PM, avg_end: 10:22 AM, visit_frequency: 0.73'
-    }
-
-    var chaoyang = '55bda7b900b0fac2af6a33de'
-    var shaoyao = '559e280ae4b0d4d1b2104c16'
-    var shanghai = '558a5ee7e4b0acec6b941e96'
-    var tsinghua = '55c0488300b0c8c194856f78'
-
-    var workList = ['55becee5e4b0d96749da3eb9',
-        '55bf000400b0cb9c41028ff2',
-        '55bf004000b042e60d1ea600',
-        '55bf00b9e4b0ea385d97c62e',
-        '55bf5fe660b28847cdfc1f50',
-        '55bf69aa00b0cfba23c10fa6',
-        '55bed663e4b0d96749dad632'
-    ]
-
-    var showAll = true
-    var markByLocalFile = function () {
-        var taxiData = {
-            "8618611791514": [],
-            "8618601355436": [{
-                "coor": {"lat": 39.907890896267, "lng": 116.429087456597},
-                "time": 1439812629.0
-            }, {
-                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
-                "time": 1439810401.0
-            }, {
-                "coor": {"lat": 39.98981391059, "lng": 116.482019856771},
-                "time": 1439810400.0
-            }, {
-                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
-                "time": 1439810402.0
-            }, {
-                "coor": {"lat": 39.968089735243, "lng": 116.452643229167},
-                "time": 1439837101.0
-            }, {
-                "coor": {"lat": 39.914627549913, "lng": 116.434919433594},
-                "time": 1439835281.0
-            }, {
-                "coor": {"lat": 39.989807128906, "lng": 116.481958821615},
-                "time": 1439810400.0
-            }, {
-                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
-                "time": 1439837101.0
-            }, {
-                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
-                "time": 1439837101.0
-            }, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}],
-            "8618611714839": [],
-            "8618600010164": [],
-            "8618600364585": [],
-            "8618601357994": [],
-            "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}],
-            "8618618137687": [],
-            "8618611186421": [],
-            "8618612752474": []
-        }
-    }
+    var showAll = true;
+    //    var markByLocalFile = function () {
+    //        var taxiData = {
+    //            "8618611791514": [],
+    //            "8618601355436": [{
+    //                "coor": {"lat": 39.907890896267, "lng": 116.429087456597},
+    //                "time": 1439812629.0
+    //            }, {
+    //                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
+    //                "time": 1439810401.0
+    //            }, {
+    //                "coor": {"lat": 39.98981391059, "lng": 116.482019856771},
+    //                "time": 1439810400.0
+    //            }, {
+    //                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
+    //                "time": 1439810402.0
+    //            }, {
+    //                "coor": {"lat": 39.968089735243, "lng": 116.452643229167},
+    //                "time": 1439837101.0
+    //            }, {
+    //                "coor": {"lat": 39.914627549913, "lng": 116.434919433594},
+    //                "time": 1439835281.0
+    //            }, {
+    //                "coor": {"lat": 39.989807128906, "lng": 116.481958821615},
+    //                "time": 1439810400.0
+    //            }, {
+    //                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
+    //                "time": 1439837101.0
+    //            }, {
+    //                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
+    //                "time": 1439837101.0
+    //            }, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}],
+    //            "8618611714839": [],
+    //            "8618600010164": [],
+    //            "8618600364585": [],
+    //            "8618601357994": [],
+    //            "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}],
+    //            "8618618137687": [],
+    //            "8618611186421": [],
+    //            "8618612752474": []
+    //        }
+    //    }
 
     var markByAVOS = function (uid, tsStart, tsEnd, userLocation, plotClusterEvidence, needToConvert) {
         console.log('start:', new Date(tsStart),
@@ -652,56 +617,49 @@
                 'tsStart:', tsStart,
                 'tsEnd:', tsEnd,
                 'convert:', needToConvert,
-                'show evidence', plotClusterEvidence)
+                'show evidence', plotClusterEvidence);
 
         var centerLoc = null;
 
-        (function() {
+        (function () {
             if (needToConvert) {
-                return AVConvertAdaptor(userLocation)
+                return AVConvertAdaptor(userLocation);
             } else {
-                return AV.Promise.as(userLocation)
+                return AV.Promise.as(userLocation);
             }
         }()).then(function (result) {
-            if(result.length == 0) {
-                alert('no data')
-            }
-
-            centerLoc = result[0].location
-            addUserLocation(map, result, infogbulid, [], showAll)
-
-            return getUPois(uid)
-
-        }).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-
-        }).then(function (result) {
-
-            addUPOI(map, result)
-
-            if (plotClusterEvidence) {
-                return getUPoiEvidences(result)
-            } else {
-                return AV.Promise.as([])
-            }
-        }).then(function (result) {
-
-            if (needToConvert) {
-                return AVConvertAdaptor(result)
-            } else {
-                return AV.Promise.as(result)
-            }
-        }).then(function (evidences) {
-            console.log('evidences:', evidences)
-            addEvidences(map, evidences)
-            // centerLoc is one of the user locations
-            map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 11);  // 初始化地图,设置中心点坐标和地图级别
-        })
+                    if (result.length == 0) {
+                        alert('no data');
+                    }
+                    centerLoc = result[0].location;
+//                    addUserLocation(map, result, infogbulid, [], showAll);
+                    addUserLocation(map, result, [], showAll);
+                    return getUPois(uid);
+                }).then(function (result) {
+                    if (needToConvert) {
+                        return AVConvertAdaptor(result);
+                    } else {
+                        return AV.Promise.as(result);
+                    }
+                }).then(function (result) {
+                    addUPOI(map, result);
+                    if (plotClusterEvidence) {
+                        return getUPoiEvidences(result);
+                    } else {
+                        return AV.Promise.as([]);
+                    }
+                }).then(function (result) {
+                    if (needToConvert) {
+                        return AVConvertAdaptor(result);
+                    } else {
+                        return AV.Promise.as(result);
+                    }
+                }).then(function (evidences) {
+                    console.log('evidences:', evidences);
+                    addEvidences(map, evidences);
+                    // centerLoc is one of the user locations
+                    map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 15);  // 初始化地图,设置中心点坐标和地图级别
+                });
     }
 
     var myDis = new BMapLib.DistanceTool(map);
@@ -712,7 +670,7 @@
     var tsStart = param['tsStart']
     var tsEnd = param['tsEnd']
     var uid = param['uid']
-    var host = param['host']
+    //    var host = param['host']
     var showEvidence = param['showEvidence']
     var needConvert = param['convert']
     var event_match = [];
@@ -722,8 +680,11 @@
     var home_office_match = [];
     var home_office_location_id = [];
 
+    var userMarkers=[];
+    var upoiMarkers=[];
+
     console.log('uid:', uid)
-    console.log('tsinghua:', tsinghua)
+    //    console.log('tsinghua:', tsinghua)
 
     //    var needConvert = false
     //    if(uid === tsinghua || uid === chaoyang) {

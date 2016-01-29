@@ -236,108 +236,108 @@ app.get('/uid/:uid/date/:datestr/show_evidence/:show_evidence/convert/:convert',
                     'homeOfficeStatus': results[3]
                 }
             };
-
+            console.log(JSON.stringify(data));
             res.render('new_map', data);
         })
 });
 
 
-app.get('/trace/uid/:uid', function (req, res) {
-    var uid = req.params.uid;
-    return getAvHomeOfficeUtrace(uid)
-        .then(function (results) {
-            var level = {"best": 1, "good": 2, "ok": 3};
-            var label_level_ho = 5, trace_ho = null, home_ho = null, office_ho = null;
-            var label_level_oh = 5, trace_oh = null, home_oh = null, office_oh = null;
-            results.forEach(function (obj) {
-                if (obj._serverData.trace_label == "H2O" && level[obj._serverData.handed_label] < label_level_ho) {
-                    label_level_ho = level[obj._serverData.handed_label];
-                    trace_ho = obj._serverData.trace;
-                    home_ho = obj._serverData.home;
-                    office_ho = obj._serverData.office;
-                }
-                if (obj._serverData.trace_label == "O2H" && level[obj._serverData.handed_label] < label_level_oh) {
-                    label_level_oh = level[obj._serverData.handed_label];
-                    trace_oh = obj._serverData.trace.reverse();
-                    home_oh = obj._serverData.home;
-                    office_oh = obj._serverData.office;
-                }
-            });
-            var data = {
-                'data': {
-                    'trace_ho': trace_ho,
-                    'home_ho': home_ho,
-                    'office_ho': office_ho,
-
-                    'trace_oh': trace_oh,
-                    'home_oh': home_oh,
-                    'office_oh': office_oh,
-                    'handed_label_ho': label_level_ho == 1 ? "best" : label_level_ho == 2
-                        ? "good" : label_level_ho == 3 ? "ok" : "other",
-                    'handed_label_oh': label_level_oh == 1 ? "best" : label_level_oh == 2
-                        ? "good" : label_level_oh == 3 ? "ok" : "other"
-                }
-            };
-            res.render('trace_map', data);
-        });
-});
-
-app.get('/uid/:uid/range/:ts_start/:ts_end', function (req, res) {
-
-    var data = {
-        'data': {
-            'tsStart': parseInt(req.params.ts_start),
-            'tsEnd': parseInt(req.params.ts_end),
-            'uid': req.params.uid
-        }
-    };
-
-    console.log(data);
-
-    //res.sendfile('public/new_map.ejs')
-    res.render('new_map', data)
-});
-
-app.get('/phone/:phone', function (req, res) {
-    console.log('phone:', req.params.phone);
-
-    var data = {
-        'phone': req.params.phone
-    };
-
-    res.render('local_map', data)
-});
-
-app.get('/basestation/start/:start/end/:end', function (req, res) {
-    var data = {
-        'data': {
-            'start': req.params.start,
-            'end': req.params.end
-        }
-    };
-
-    console.log('base station, data:', data);
-
-    res.render('base_station', data)
-
-});
-
-app.get('/basestation/date/:date', function (req, res) {
-
-    var date = new Date(req.params.date);
-    var startEnd = getTS(date);
-
-
-    var data = {
-        'data': {
-            'start': startEnd[0] / 1000,
-            'end': startEnd[1] / 1000
-        }
-    };
-
-    res.render('base_station', data)
-
-});
+//app.get('/trace/uid/:uid', function (req, res) {
+//    var uid = req.params.uid;
+//    return getAvHomeOfficeUtrace(uid)
+//        .then(function (results) {
+//            var level = {"best": 1, "good": 2, "ok": 3};
+//            var label_level_ho = 5, trace_ho = null, home_ho = null, office_ho = null;
+//            var label_level_oh = 5, trace_oh = null, home_oh = null, office_oh = null;
+//            results.forEach(function (obj) {
+//                if (obj._serverData.trace_label == "H2O" && level[obj._serverData.handed_label] < label_level_ho) {
+//                    label_level_ho = level[obj._serverData.handed_label];
+//                    trace_ho = obj._serverData.trace;
+//                    home_ho = obj._serverData.home;
+//                    office_ho = obj._serverData.office;
+//                }
+//                if (obj._serverData.trace_label == "O2H" && level[obj._serverData.handed_label] < label_level_oh) {
+//                    label_level_oh = level[obj._serverData.handed_label];
+//                    trace_oh = obj._serverData.trace.reverse();
+//                    home_oh = obj._serverData.home;
+//                    office_oh = obj._serverData.office;
+//                }
+//            });
+//            var data = {
+//                'data': {
+//                    'trace_ho': trace_ho,
+//                    'home_ho': home_ho,
+//                    'office_ho': office_ho,
+//
+//                    'trace_oh': trace_oh,
+//                    'home_oh': home_oh,
+//                    'office_oh': office_oh,
+//                    'handed_label_ho': label_level_ho == 1 ? "best" : label_level_ho == 2
+//                        ? "good" : label_level_ho == 3 ? "ok" : "other",
+//                    'handed_label_oh': label_level_oh == 1 ? "best" : label_level_oh == 2
+//                        ? "good" : label_level_oh == 3 ? "ok" : "other"
+//                }
+//            };
+//            res.render('trace_map', data);
+//        });
+//});
+//
+//app.get('/uid/:uid/range/:ts_start/:ts_end', function (req, res) {
+//
+//    var data = {
+//        'data': {
+//            'tsStart': parseInt(req.params.ts_start),
+//            'tsEnd': parseInt(req.params.ts_end),
+//            'uid': req.params.uid
+//        }
+//    };
+//
+//    console.log(data);
+//
+//    //res.sendfile('public/new_map.ejs')
+//    res.render('new_map', data)
+//});
+//
+//app.get('/phone/:phone', function (req, res) {
+//    console.log('phone:', req.params.phone);
+//
+//    var data = {
+//        'phone': req.params.phone
+//    };
+//
+//    res.render('local_map', data)
+//});
+//
+//app.get('/basestation/start/:start/end/:end', function (req, res) {
+//    var data = {
+//        'data': {
+//            'start': req.params.start,
+//            'end': req.params.end
+//        }
+//    };
+//
+//    console.log('base station, data:', data);
+//
+//    res.render('base_station', data)
+//
+//});
+//
+//app.get('/basestation/date/:date', function (req, res) {
+//
+//    var date = new Date(req.params.date);
+//    var startEnd = getTS(date);
+//
+//
+//    var data = {
+//        'data': {
+//            'start': startEnd[0] / 1000,
+//            'end': startEnd[1] / 1000
+//        }
+//    };
+//
+//    res.render('base_station', data)
+//
+//});
 
 var server = app.listen(9111, '0.0.0.0', function () {
 
