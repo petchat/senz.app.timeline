@@ -3,30 +3,33 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
-    <style type="text/css">
-        body, html, #allmap {
-            width: 100%;
-            height: 100%;
-            /*overflow: hidden;*/
-            margin: 0;
-        }
-    </style>
+    <title>地图展示</title>
     <script type="text/javascript" src="/scripts/underscore-min.js"></script>
     <script src="/scripts/av-0.5.1.min.js"></script>
     <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bHbEGIEzXaATRk08GLSZSGUA"></script>
     <script type="text/javascript" src="/scripts/convertor.js"></script>
     <script type="text/javascript" src="/scripts/DistanceTool_min.js"></script>
-    <title>地图展示</title>
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="/scripts/jquery.min.js"></script>
+    <style type="text/css">
+        body, html, #allmap {
+            width: 100%;
+            height: 95%;
+            /*overflow: hidden;*/
+            margin: 0px;
+        }
+    </style>
 </head>
 <body>
-<input type="checkbox" value="Activity"/> Activity
-<input type="checkbox" value="HomeOffice"/> HomeOffice
-<input type="checkbox" value="Event"/> Event
-<input type="checkbox" value="Subway"/> Subway
+<div style="padding: 10px;">
+    <input type="checkbox" value="Activity" checked="checked"/> Activity
+    <input type="checkbox" value="HomeOffice" checked="checked"/> HomeOffice
+    <input type="checkbox" value="Event" checked="checked"/> Event
+    <input type="checkbox" value="UPOI" checked="checked"/> UPOI
+    <input type="checkbox" value="DisMode"/> 测距模式
+</div>
 
 <div id="allmap"></div>
-<input type="button" value="开启" onclick="myDis.open()"/>
-<input type="button" value="关闭" onclick="myDis.close()"/>
 </body>
 </html>
 <script type="text/javascript">
@@ -124,50 +127,50 @@
         );
     };
 
-    var getAvUserLocation = function (uid, tsStart, tsEnd) {
-        console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd);
+    //    var getAvUserLocation = function (uid, tsStart, tsEnd) {
+    //        console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd);
+    //
+    //        var promise = new AV.Promise();
+    //
+    //        var UserLocation = AV.Object.extend('UserLocation');
+    //        var User = AV.Object.extend('_User');
+    //
+    //        var query = new AV.Query(UserLocation);
+    //
+    //        var up = new User();
+    //        up.id = uid;
+    //
+    //        query.equalTo('user', up);
+    //        query.greaterThan('timestamp', tsStart);
+    //        query.lessThan('timestamp', tsEnd);
+    //
+    //        var raw = null;
+    //
+    //        _findAll(query).then(function (result) {
+    //            console.log('user location length:', result.length);
+    //            promise.resolve(result);
+    //
+    //        })
+    //        return promise;
+    //    }
 
-        var promise = new AV.Promise();
-
-        var UserLocation = AV.Object.extend('UserLocation');
-        var User = AV.Object.extend('_User');
-
-        var query = new AV.Query(UserLocation);
-
-        var up = new User();
-        up.id = uid;
-
-        query.equalTo('user', up);
-        query.greaterThan('timestamp', tsStart);
-        query.lessThan('timestamp', tsEnd);
-
-        var raw = null;
-
-        _findAll(query).then(function (result) {
-            console.log('user location length:', result.length);
-            promise.resolve(result);
-
-        })
-        return promise;
-    }
-
-    var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
-
-        var promise = new AV.Promise();
-
-        var HomeOfficeStatus = AV.Object.extend('HomeOfficeStatus');
-        var User = AV.Object.extend('_User');
-
-        var query = new AV.Query(HomeOfficeStatus);
-        var up = new User();
-        up.id = uid;
-
-        query.equalTo('user', up);
-        query.greaterThanOrEqualTo('timestamp', tsStart);
-        query.lessThanOrEqualTo('timestamp', tsEnd);
-
-        return _findAll(query);
-    }
+    //    var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
+    //
+    //        var promise = new AV.Promise();
+    //
+    //        var HomeOfficeStatus = AV.Object.extend('HomeOfficeStatus');
+    //        var User = AV.Object.extend('_User');
+    //
+    //        var query = new AV.Query(HomeOfficeStatus);
+    //        var up = new User();
+    //        up.id = uid;
+    //
+    //        query.equalTo('user', up);
+    //        query.greaterThanOrEqualTo('timestamp', tsStart);
+    //        query.lessThanOrEqualTo('timestamp', tsEnd);
+    //
+    //        return _findAll(query);
+    //    }
 
     //    var getLogTrace = function (installationId, tsStart, tsEnd) {
     //        var promise = new AV.Promise()
@@ -187,44 +190,44 @@
         query.equalTo('user', up);
 
         _findAll(query).then(function (result) {
-            console.log('u_poi length:', result.length);
+//            console.log('u_poi length:', result.length);
             promise.resolve(result);
         })
 
-        return promise
-    }
-
-    var getAvUPoiEvi = function (upois) {
-        var promise = new AV.Promise()
-        var marked_UserLocation = AV.Object.extend('marked_UserLocation')
-
-        var query = new AV.Query(marked_UserLocation)
-        query.containedIn('u_poi', upois)
-        query.doesNotExist("u_poi_visit_log")
-
-        _findAll(query).then(function (result) {
-            console.log('u_poi evidences length:', result.length)
-            promise.resolve(result)
-        })
-
-        return promise
-    }
-
-    var getMoUPoiEvi = function (upois) {
-
-        var promise = new AV.Promise();
-        var where = 'filter[where][and][0][where][uid]=' + uid;
-        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' + where;
-
-        $.getJSON(path, function (data) {
-            if (data) {
-                promise.resolve(data);
-            } else {
-                promise.reject('load failed:', path);
-            }
-        })
         return promise;
     }
+
+    //    var getAvUPoiEvi = function (upois) {
+    //        var promise = new AV.Promise()
+    //        var marked_UserLocation = AV.Object.extend('marked_UserLocation')
+    //
+    //        var query = new AV.Query(marked_UserLocation)
+    //        query.containedIn('u_poi', upois)
+    //        query.doesNotExist("u_poi_visit_log")
+    //
+    //        _findAll(query).then(function (result) {
+    ////            console.log('u_poi evidences length:', result.length);
+    //            promise.resolve(result);
+    //        })
+    //
+    //        return promise;
+    //    }
+
+    //    var getMoUPoiEvi = function (upois) {
+    //
+    //        var promise = new AV.Promise();
+    //        var where = 'filter[where][and][0][where][uid]=' + uid;
+    //        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' + where;
+    //
+    //        $.getJSON(path, function (data) {
+    //            if (data) {
+    //                promise.resolve(data);
+    //            } else {
+    //                promise.reject('load failed:', path);
+    //            }
+    //        })
+    //        return promise;
+    //    }
 
 
     var addEvidences = function (map, evidences) {
@@ -256,39 +259,38 @@
                 this.openInfoWindow(new BMap.InfoWindow(html));
             })
 
-            map.addOverlay(marker)
+            map.addOverlay(marker);
         })
     }
 
-
-    var addCoordinates = function (map, coors, timeList, phoneList) {
-        var markers = []
-        for (var i = 0; i < coors.length; i++) {
-
-            var coor = coors[i]
-            var date = new Date(timeList[i])
-            var phone = phoneList[i]
-
-            var point = new BMap.Point(coor.lng, coor.lat);
-            var marker = new BMap.Marker(point);  // 创建标注
-
-            marker.addEventListener("click", function (e) {
-
-                var html = '<p>' + info + '<br/>'
-                        + '<b>phone:</b>' + phone + '<br/>'
-                        + date.toString() + '<br /> '
-                        + coor + '<br/>'
-
-                this.openInfoWindow(new BMap.InfoWindow(html));
-            });
-
-            markers.push(marker)
-        }
-
-        markers.forEach(function (marker) {
-            map.addOverlay(marker)
-        })
-    }
+    //    var addCoordinates = function (map, coors, timeList, phoneList) {
+    //        var markers = []
+    //        for (var i = 0; i < coors.length; i++) {
+    //
+    //            var coor = coors[i]
+    //            var date = new Date(timeList[i])
+    //            var phone = phoneList[i]
+    //
+    //            var point = new BMap.Point(coor.lng, coor.lat);
+    //            var marker = new BMap.Marker(point);  // 创建标注
+    //
+    //            marker.addEventListener("click", function (e) {
+    //
+    //                var html = '<p>' + info + '<br/>'
+    //                        + '<b>phone:</b>' + phone + '<br/>'
+    //                        + date.toString() + '<br /> '
+    //                        + coor + '<br/>'
+    //
+    //                this.openInfoWindow(new BMap.InfoWindow(html));
+    //            });
+    //
+    //            markers.push(marker);
+    //        }
+    //
+    //        markers.forEach(function (marker) {
+    //            map.addOverlay(marker);
+    //        });
+    //    }
 
     var addIconLegend = function (map, x, y, icon, text) {
 
@@ -318,7 +320,6 @@
     };
 
     // END OF DAO
-//    var addUserLocation = function (map, userLocations, infoGbULID, ulIds, showAll) {
     var addUserLocation = function (map, userLocations, ulIds, showAll) {
         if (userLocations === null) {
             userLocations = [];
@@ -342,8 +343,8 @@
         activity_location_id.length = 0;
         home_office_location_id.length = 0;
         var index = -1;
+        var type = '';
 
-//        var test = []
         userLocations.forEach(function (userLocation) {
             if (ulIds.indexOf(userLocation._id) > -1 || showAll) {
                 var loc = userLocation.location;
@@ -380,9 +381,11 @@
                 var marker = new BMap.Marker(point);
                 if ((index = activity_location_id.indexOf(userLocation._id)) >= 0) {
                     marker = new BMap.Marker(point, {icon: iconblue});
+                    type = 'activity';
                 } else if ((index = home_office_location_id.indexOf(userLocation._id)) >= 0 &&
                         homeOfficeStatus[home_office_match[index]].status != 'unknown_status') {
                     marker = new BMap.Marker(point, {icon: iconyellow});
+                    type = 'homeOffice';
                 } else if ((index = event_location_id.indexOf(userLocation._id)) >= 0
                         && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown') {
                     if (userEvent[event_match[index]].isOnSubway) {
@@ -390,25 +393,16 @@
                     } else {
                         marker = new BMap.Marker(point, {icon: icongreen});
                     }
+                    type = 'event';
                 }
 
-                var date = new Date(userLocation.timestamp)
-                marker.addEventListener("click", function (e) {
-//                    if (userLocation._id in infoGbULID) {
-//                        var info = infoGbULID[userLocation.id]
-//                        html = '<p>' + info + '<br/>'
-//                                + '<b>user location info:</b>' + '<br/>'
-//                                + date.toString() + '<br /> '
-//                                + userLocation.timestamp + '<br/>'
-//                                + coor + '<br/>'
-//                                + userLocation._id + '</p>'
-//                    } else {
-                        html = '<p>' + 'user location info:' + '<br/>'
-                                + date.toString() + '<br /> '
-                                + userLocation.timestamp + '<br/>'
-                                + coor + '<br/>'
-                                + userLocation._id + '</p>';
-//                    }
+                var date = new Date(userLocation.timestamp);
+                marker.addEventListener("click", function () {
+                    html = '<p>' + 'user location info:' + '<br/>'
+                            + date.toString() + '<br /> '
+                            + userLocation.timestamp + '<br/>'
+                            + coor + '<br/>'
+                            + userLocation._id + '</p>';
 
                     if ((index = event_location_id.indexOf(userLocation._id)) >= 0
                             && Object.keys(userEvent[event_match[index]].event)[0] != 'unknown') {
@@ -441,16 +435,34 @@
                     this.openInfoWindow(new BMap.InfoWindow(html));
                 });
 
-                userMarkers.push(marker);
+                switch (type) {
+                    case 'activity':
+                        activityMarkers.push(marker);
+                        break;
+                    case 'homeOffice':
+                        homeOfficeMarkers.push(marker);
+                        break;
+                    case 'event':
+                        eventMarkers.push(marker);
+                        break;
+                }
             }
         });
 
-        userMarkers.forEach(function (marker) {
+        console.log('activity length:', activityMarkers.length);
+        console.log('homeOffice length:', homeOfficeMarkers.length);
+        console.log('event length:', eventMarkers.length);
+        activityMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
+        homeOfficeMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
+        eventMarkers.forEach(function (marker) {
             map.addOverlay(marker);
         });
 
     }
-
 
     var addUPOI = function (map, uPois) {
 
@@ -459,8 +471,6 @@
             alert('user has not u_pois');
         }
 
-//        var iconUri = 'http://google.com'
-//        var iconUri = 'https://www.baidu.com/img/bdlogo.png'
         var iconUri = '/images/u_poi_icon.png';
         var upoiIcon = new BMap.Icon(iconUri, new BMap.Size(40, 40));
 
@@ -472,27 +482,17 @@
             var point = new BMap.Point(loc.longitude, loc.latitude);
             var marker = new BMap.Marker(point, {icon: upoiIcon});  // 创建标注
 
-            marker.addEventListener("click", function (e) {
-
-//                if (upoi.id in infogbupoiid) {
-//                    var info = infogbupoiid[upoi.id]
-//
-//                    var html = '<p>' + info + '<br />'
-//                            + '<b>' + poi_title + '</b> <br />'
-//                            + coor + '<br/>'
-//                            + upoi.id + '</p>'
-//                    this.openInfoWindow(new BMap.InfoWindow(html));
-//                } else {
-                    var html = '<p>' + poi_title + '<br />'
-                            + coor + '<br/>'
-                            + upoi.id + '</p>'
-                    this.openInfoWindow(new BMap.InfoWindow(html))
-//                }
+            marker.addEventListener("click", function () {
+                var html = '<p>' + poi_title + '<br />'
+                        + coor + '<br/>'
+                        + upoi.id + '</p>'
+                this.openInfoWindow(new BMap.InfoWindow(html));
             });
 
             upoiMarkers.push(marker);
         });
 
+        console.log('u_poi length:', upoiMarkers.length);
         upoiMarkers.forEach(function (marker) {
             map.addOverlay(marker);
         });
@@ -500,24 +500,22 @@
     }
 
     var tsStartEnd = function (date) {
-//        var start = _.clone(date)
         var start = new Date(date.getTime());
 
-        start.setHours(0)
-        start.setMinutes(0)
-        start.setSeconds(0)
+        start.setHours(0);
+        start.setMinutes(0);
+        start.setSeconds(0);
 
-        var tsStart = start.getTime()
+        var tsStart = start.getTime();
 
-//        var end = _.clone(date)
-        var end = new Date(date.getTime())
-        end.setHours(23)
-        end.setMinutes(59)
-        end.setSeconds(59)
+        var end = new Date(date.getTime());
+        end.setHours(23);
+        end.setMinutes(59);
+        end.setSeconds(59);
 
-        var tsEnd = end.getTime()
+        var tsEnd = end.getTime();
 
-        return [tsStart, tsEnd]
+        return [tsStart, tsEnd];
     }
 
     // 百度地图API功能
@@ -526,90 +524,6 @@
     map.addControl(new BMap.MapTypeControl());   //添加地图类型控件
     //    map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
     map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
-
-//    var infogbulid = {
-//        '55becee5e4b0d96749da3eb9': '<b>near u_poi info:</b>  <br/>' +
-//        'Home, avg_start: 10:22 AM, avg_end: 9:08 PM, visit_frequency: 0.91 <br/>' +
-//        'status: Leaving Home',
-//
-//        '55bed663e4b0d96749dad632': '<b>near u_poi info:</b>   <br/>' +
-//        'Workplace, avg_start: 11:02 AM, avg_end: 8:20 PM, visit_frequency: 0.89 <br/>' +
-//        'status: Arrive Workplace',
-//
-//        '55b7a9a300b0df8ab5666093': '<b>u_poi info:</b> <br/>' +
-//        "浦东国际机场, visit_frequency: 0.01",
-//        '55a5de61e4b0e11f62b2b948': '<b>u_poi info:</b> <br/>' +
-//        "北京邮电大学, avg_duration: 5.1 hours"
-//    }
-
-//    var infogbupoiid = {
-//
-//        '55baf12c00b0ee7fe0ff65d4': '<b>u_poi info:</b> <br/>' +
-//        'Workplace, avg_start: 11:04 AM, avg_end: 8:50 PM, visit_frequency: 0.81',
-//
-//        '55cf10d800b0de09aaea58e3': '<b>u_poi info:</b> <br/>' +
-//        'Frequent visit place, avg_start: 9:02 PM, avg_end: 9:14 PM, visit_frequency: 0.43',
-//
-//        '55baf12b00b0ee7fe0ff65c6': '<b>u_poi info:</b> <br/>' +
-//        'Home, avg_start: 10:51 PM, avg_end: 10:22 AM, visit_frequency: 0.73'
-//    }
-
-    //    var chaoyang = '55bda7b900b0fac2af6a33de'
-    //    var shaoyao = '559e280ae4b0d4d1b2104c16'
-    //    var shanghai = '558a5ee7e4b0acec6b941e96'
-    //    var tsinghua = '55c0488300b0c8c194856f78'
-
-    //    var workList = ['55becee5e4b0d96749da3eb9',
-    //        '55bf000400b0cb9c41028ff2',
-    //        '55bf004000b042e60d1ea600',
-    //        '55bf00b9e4b0ea385d97c62e',
-    //        '55bf5fe660b28847cdfc1f50',
-    //        '55bf69aa00b0cfba23c10fa6',
-    //        '55bed663e4b0d96749dad632'
-    //    ]
-
-    var showAll = true;
-    //    var markByLocalFile = function () {
-    //        var taxiData = {
-    //            "8618611791514": [],
-    //            "8618601355436": [{
-    //                "coor": {"lat": 39.907890896267, "lng": 116.429087456597},
-    //                "time": 1439812629.0
-    //            }, {
-    //                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
-    //                "time": 1439810401.0
-    //            }, {
-    //                "coor": {"lat": 39.98981391059, "lng": 116.482019856771},
-    //                "time": 1439810400.0
-    //            }, {
-    //                "coor": {"lat": 39.989819335937, "lng": 116.482073296441},
-    //                "time": 1439810402.0
-    //            }, {
-    //                "coor": {"lat": 39.968089735243, "lng": 116.452643229167},
-    //                "time": 1439837101.0
-    //            }, {
-    //                "coor": {"lat": 39.914627549913, "lng": 116.434919433594},
-    //                "time": 1439835281.0
-    //            }, {
-    //                "coor": {"lat": 39.989807128906, "lng": 116.481958821615},
-    //                "time": 1439810400.0
-    //            }, {
-    //                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
-    //                "time": 1439837101.0
-    //            }, {
-    //                "coor": {"lat": 39.968001844618, "lng": 116.452544759115},
-    //                "time": 1439837101.0
-    //            }, {"coor": {"lat": 39.908223741319, "lng": 116.429078776042}, "time": 1439812628.0}],
-    //            "8618611714839": [],
-    //            "8618600010164": [],
-    //            "8618600364585": [],
-    //            "8618601357994": [],
-    //            "8618618264607": [{"coor": {"lat": 39.895482, "lng": 116.445731}, "time": 1439234714.0}],
-    //            "8618618137687": [],
-    //            "8618611186421": [],
-    //            "8618612752474": []
-    //        }
-    //    }
 
     var markByAVOS = function (uid, tsStart, tsEnd, userLocation, plotClusterEvidence, needToConvert) {
         console.log('start:', new Date(tsStart),
@@ -632,7 +546,6 @@
                         alert('no data');
                     }
                     centerLoc = result[0].location;
-//                    addUserLocation(map, result, infogbulid, [], showAll);
                     addUserLocation(map, result, [], showAll);
                     return getUPois(uid);
                 }).then(function (result) {
@@ -655,24 +568,26 @@
                         return AV.Promise.as(result);
                     }
                 }).then(function (evidences) {
-                    console.log('evidences:', evidences);
+//                    console.log('evidences:', evidences);
                     addEvidences(map, evidences);
                     // centerLoc is one of the user locations
-                    map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 15);  // 初始化地图,设置中心点坐标和地图级别
+                    map.centerAndZoom(new BMap.Point(centerLoc.lng, centerLoc.lat), 16);  // 初始化地图,设置中心点坐标和地图级别
                 });
     }
 
     var myDis = new BMapLib.DistanceTool(map);
-    var userLocation = param['userLocation']
-    var userEvent = param['userEvent']
-    var userActivity = param['userActivity']
-    var homeOfficeStatus = param['homeOfficeStatus']
-    var tsStart = param['tsStart']
-    var tsEnd = param['tsEnd']
-    var uid = param['uid']
-    //    var host = param['host']
-    var showEvidence = param['showEvidence']
-    var needConvert = param['convert']
+    var userLocation = param['userLocation'];
+    var userEvent = param['userEvent'];
+    var userActivity = param['userActivity'];
+    var homeOfficeStatus = param['homeOfficeStatus'];
+    var tsStart = param['tsStart'];
+    var tsEnd = param['tsEnd'];
+    var uid = param['uid'];
+    var showEvidence = param['showEvidence'];
+    var needConvert = param['convert'];
+
+    var showAll = true;
+
     var event_match = [];
     var event_location_id = [];
     var activity_match = [];
@@ -680,17 +595,102 @@
     var home_office_match = [];
     var home_office_location_id = [];
 
-    var userMarkers=[];
-    var upoiMarkers=[];
+    var activityMarkers = [];
+    var homeOfficeMarkers = [];
+    var eventMarkers = [];
+    var upoiMarkers = [];
 
     console.log('uid:', uid)
-    //    console.log('tsinghua:', tsinghua)
 
-    //    var needConvert = false
-    //    if(uid === tsinghua || uid === chaoyang) {
-    //        needConvert = true
-    //    }
+    markByAVOS(uid, tsStart, tsEnd, userLocation, showEvidence, needConvert);
 
-    markByAVOS(uid, tsStart, tsEnd, userLocation, showEvidence, needConvert)
+    $(document).ready(function () {
+        $('input[type=checkbox]').change(function () {
+            var which = $(this).val();
+            var isChecked = $(this).is(':checked');
+            switch (which) {
+                case 'Activtiy':
+                    if (isChecked) {
+                        showActivity();
+                    } else {
+                        hideActivity();
+                    }
+                    break;
+                case 'HomeOffice':
+                    if (isChecked) {
+                        showHomeOffice();
+                    } else {
+                        hideHomeOffice();
+                    }
+                    break;
+                case 'Event':
+                    if (isChecked) {
+                        showEvent();
+                    } else {
+                        hideEvent();
+                    }
+                    break;
+                case 'UPOI':
+                    if (isChecked) {
+                        showUPOI();
+                    } else {
+                        hideUPOI();
+                    }
+                    break;
+                case 'DisMode':
+                    if (isChecked) {
+                        myDis.open();
+                    } else {
+                        myDis.close();
+                    }
+                    break;
+            }
+        });
+    });
 
+    function showActivity() {
+        activityMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
+    }
+
+    function hideActivity() {
+        activityMarkers.forEach(function (marker) {
+            map.removeOverlay(marker);
+        });
+    }
+    function showHomeOffice() {
+        homeOfficeMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
+    }
+
+    function hideHomeOffice() {
+        homeOfficeMarkers.forEach(function (marker) {
+            map.removeOverlay(marker);
+        });
+    }
+    function showEvent() {
+        eventMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
+    }
+
+    function hideEvent() {
+        eventMarkers.forEach(function (marker) {
+            map.removeOverlay(marker);
+        });
+    }
+
+    function showUPOI() {
+        upoiMarkers.forEach(function (marker) {
+            map.addOverlay(marker);
+        });
+    }
+
+    function hideUPOI() {
+        upoiMarkers.forEach(function (marker) {
+            map.removeOverlay(marker);
+        });
+    }
 </script>
