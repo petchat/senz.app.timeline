@@ -11,6 +11,8 @@
     <script type="text/javascript" src="/scripts/DistanceTool_min.js"></script>
     <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
     <script src="/scripts/jquery.min.js"></script>
+    <!-- 自定义 -->
+    <script src="/scripts/custom.js"></script>
     <style type="text/css">
         body, html, #allmap {
             width: 100%;
@@ -22,6 +24,8 @@
 </head>
 <body>
 <div style="padding: 10px;">
+    <input type="number" min="0" max="23" id="start" value="0"/> 点 至
+    <input type="number" min="1" max="24" id="end" value="24"/> 点
     <input type="checkbox" value="Activity" checked="checked"/> Activity
     <input type="checkbox" value="HomeOffice" checked="checked"/> HomeOffice
     <input type="checkbox" value="Event" checked="checked"/> Event
@@ -33,6 +37,9 @@
 </body>
 </html>
 <script type="text/javascript">
+
+    var start = 0;
+    var end = 24;
 
     param = <%- JSON.stringify(data) %>;
     console.log('param from backend:', param);
@@ -127,56 +134,6 @@
         );
     };
 
-    //    var getAvUserLocation = function (uid, tsStart, tsEnd) {
-    //        console.log('uid:', uid, 'tsStart:', tsStart, 'tsEnd:', tsEnd);
-    //
-    //        var promise = new AV.Promise();
-    //
-    //        var UserLocation = AV.Object.extend('UserLocation');
-    //        var User = AV.Object.extend('_User');
-    //
-    //        var query = new AV.Query(UserLocation);
-    //
-    //        var up = new User();
-    //        up.id = uid;
-    //
-    //        query.equalTo('user', up);
-    //        query.greaterThan('timestamp', tsStart);
-    //        query.lessThan('timestamp', tsEnd);
-    //
-    //        var raw = null;
-    //
-    //        _findAll(query).then(function (result) {
-    //            console.log('user location length:', result.length);
-    //            promise.resolve(result);
-    //
-    //        })
-    //        return promise;
-    //    }
-
-    //    var getAvHomeOfficeStatus = function (uid, tsStart, tsEnd) {
-    //
-    //        var promise = new AV.Promise();
-    //
-    //        var HomeOfficeStatus = AV.Object.extend('HomeOfficeStatus');
-    //        var User = AV.Object.extend('_User');
-    //
-    //        var query = new AV.Query(HomeOfficeStatus);
-    //        var up = new User();
-    //        up.id = uid;
-    //
-    //        query.equalTo('user', up);
-    //        query.greaterThanOrEqualTo('timestamp', tsStart);
-    //        query.lessThanOrEqualTo('timestamp', tsEnd);
-    //
-    //        return _findAll(query);
-    //    }
-
-    //    var getLogTrace = function (installationId, tsStart, tsEnd) {
-    //        var promise = new AV.Promise()
-    //
-    //    }
-
     var getUPois = function (uid) {
         var promise = new AV.Promise();
         var UPoi = AV.Object.extend('UPoi');
@@ -197,46 +154,13 @@
         return promise;
     }
 
-    //    var getAvUPoiEvi = function (upois) {
-    //        var promise = new AV.Promise()
-    //        var marked_UserLocation = AV.Object.extend('marked_UserLocation')
-    //
-    //        var query = new AV.Query(marked_UserLocation)
-    //        query.containedIn('u_poi', upois)
-    //        query.doesNotExist("u_poi_visit_log")
-    //
-    //        _findAll(query).then(function (result) {
-    ////            console.log('u_poi evidences length:', result.length);
-    //            promise.resolve(result);
-    //        })
-    //
-    //        return promise;
-    //    }
-
-    //    var getMoUPoiEvi = function (upois) {
-    //
-    //        var promise = new AV.Promise();
-    //        var where = 'filter[where][and][0][where][uid]=' + uid;
-    //        var path = 'http://119.254.111.40:3000/api/MarkedUserLocation?filter=' + where;
-    //
-    //        $.getJSON(path, function (data) {
-    //            if (data) {
-    //                promise.resolve(data);
-    //            } else {
-    //                promise.reject('load failed:', path);
-    //            }
-    //        })
-    //        return promise;
-    //    }
-
-
     var addEvidences = function (map, evidences) {
 
         if (evidences === null) {
-            evidences = []
+            evidences = [];
         }
 
-        var iconUri = '/images/evidence_icon.png'
+        var iconUri = '/images/evidence_icon.png';
         var evidenceIcon = new BMap.Icon(iconUri, new BMap.Size(16, 16));
 
         evidences.forEach(function (evidence) {
@@ -263,34 +187,6 @@
         })
     }
 
-    //    var addCoordinates = function (map, coors, timeList, phoneList) {
-    //        var markers = []
-    //        for (var i = 0; i < coors.length; i++) {
-    //
-    //            var coor = coors[i]
-    //            var date = new Date(timeList[i])
-    //            var phone = phoneList[i]
-    //
-    //            var point = new BMap.Point(coor.lng, coor.lat);
-    //            var marker = new BMap.Marker(point);  // 创建标注
-    //
-    //            marker.addEventListener("click", function (e) {
-    //
-    //                var html = '<p>' + info + '<br/>'
-    //                        + '<b>phone:</b>' + phone + '<br/>'
-    //                        + date.toString() + '<br /> '
-    //                        + coor + '<br/>'
-    //
-    //                this.openInfoWindow(new BMap.InfoWindow(html));
-    //            });
-    //
-    //            markers.push(marker);
-    //        }
-    //
-    //        markers.forEach(function (marker) {
-    //            map.addOverlay(marker);
-    //        });
-    //    }
 
     var addIconLegend = function (map, x, y, icon, text) {
 
@@ -396,7 +292,8 @@
                     type = 'event';
                 }
 
-                var date = new Date(userLocation.timestamp);
+                var date = new Date(userLocation.timestamp).pattern('yyyy-MM-dd HH:mm:ss');
+                var hour = parseInt(new Date(userLocation.timestamp).pattern('HH'));
                 marker.addEventListener("click", function () {
                     html = '<p>' + 'user location info:' + '<br/>'
                             + date.toString() + '<br /> '
@@ -437,13 +334,22 @@
 
                 switch (type) {
                     case 'activity':
-                        activityMarkers.push(marker);
+                        activityMarkers.push({
+                            hour: hour,
+                            marker: marker
+                        });
                         break;
                     case 'homeOffice':
-                        homeOfficeMarkers.push(marker);
+                        homeOfficeMarkers.push({
+                            hour: hour,
+                            marker: marker
+                        });
                         break;
                     case 'event':
-                        eventMarkers.push(marker);
+                        eventMarkers.push({
+                            hour: hour,
+                            marker: marker
+                        });
                         break;
                 }
             }
@@ -452,16 +358,10 @@
         console.log('activity length:', activityMarkers.length);
         console.log('homeOffice length:', homeOfficeMarkers.length);
         console.log('event length:', eventMarkers.length);
-        activityMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
-        });
-        homeOfficeMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
-        });
-        eventMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
-        });
 
+        showActivity();
+        showHomeOffice();
+        showEvent();
     }
 
     var addUPOI = function (map, uPois) {
@@ -493,10 +393,8 @@
         });
 
         console.log('u_poi length:', upoiMarkers.length);
-        upoiMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
-        });
 
+        showUPOI();
     }
 
     var tsStartEnd = function (date) {
@@ -605,6 +503,31 @@
     markByAVOS(uid, tsStart, tsEnd, userLocation, showEvidence, needConvert);
 
     $(document).ready(function () {
+        // init
+        $('#start').change(function () {
+            var val = $(this).val();
+            if (val < 0) {
+                val = 0;
+                $(this).val(val);
+            } else if (val > 23) {
+                val = 23;
+                $(this).val(val);
+            }
+            start = val;
+            updateUI();
+        });
+        $('#end').change(function () {
+            var val = $(this).val();
+            if (val < 1) {
+                val = 1;
+                $(this).val(val);
+            } else if (val > 24) {
+                val = 24;
+                $(this).val(val);
+            }
+            end = val;
+            updateUI();
+        });
         $('input[type=checkbox]').change(function () {
             var which = $(this).val();
             var isChecked = $(this).is(':checked');
@@ -648,37 +571,65 @@
         });
     });
 
+    function updateUI() {
+        hideActivity();
+        hideHomeOffice();
+        hideEvent();
+        $('input[type=checkbox]:checked').each(function () {
+            var which = $(this).val();
+            switch (which) {
+                case 'Activtiy':
+                    showActivity();
+                    break;
+                case 'HomeOffice':
+                    showHomeOffice();
+                    break;
+                case 'Event':
+                    showEvent();
+                    break;
+            }
+        });
+    }
+
     function showActivity() {
-        activityMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
+        activityMarkers.forEach(function (obj) {
+            if (obj.hour >= start && obj.hour < end) {
+                map.addOverlay(obj.marker);
+            }
         });
     }
 
     function hideActivity() {
-        activityMarkers.forEach(function (marker) {
-            map.removeOverlay(marker);
+        activityMarkers.forEach(function (obj) {
+            map.removeOverlay(obj.marker);
         });
     }
+
     function showHomeOffice() {
-        homeOfficeMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
+        homeOfficeMarkers.forEach(function (obj) {
+            if (obj.hour >= start && obj.hour < end) {
+                map.addOverlay(obj.marker);
+            }
         });
     }
 
     function hideHomeOffice() {
-        homeOfficeMarkers.forEach(function (marker) {
-            map.removeOverlay(marker);
+        homeOfficeMarkers.forEach(function (obj) {
+            map.removeOverlay(obj.marker);
         });
     }
+
     function showEvent() {
-        eventMarkers.forEach(function (marker) {
-            map.addOverlay(marker);
+        eventMarkers.forEach(function (obj) {
+            if (obj.hour >= start && obj.hour < end) {
+                map.addOverlay(obj.marker);
+            }
         });
     }
 
     function hideEvent() {
-        eventMarkers.forEach(function (marker) {
-            map.removeOverlay(marker);
+        eventMarkers.forEach(function (obj) {
+            map.removeOverlay(obj.marker);
         });
     }
 
