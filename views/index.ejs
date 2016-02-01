@@ -52,12 +52,15 @@
             </form>
         </div>
         <div id="content" class="col-xs-10 hidden">
+            <div style="margin-top: 10px;margin-bottom: 10px;">
+                <button type="button" class="btn btn-primary btn-xs toDetailBtn" value="deviceDetail">Device详情
+                </button>
+                <button type="button" class="btn btn-primary btn-xs" id="toMapTools">地图工具
+                </button>
+            </div>
             <div class="panel panel-default" id="logDiv">
                 <div class="panel-heading">
                     Log DB
-                    <button type="button" class="btn btn-primary btn-xs pull-right toDetailBtn"
-                            value="deviceDetail">Device详情
-                    </button>
                 </div>
                 <div class="panel-body">
                     <div id="logChartDiv" style="height:400px;">
@@ -190,6 +193,11 @@
         $('.toDetailBtn').click(function () {
             var which = $(this).val();
             var url = '/detail/' + which + '?date=' + date + '&userId=' + userId + '&installationId=' + installationId;
+            toNewTabPage(url);
+        });
+        // 地图工具
+        $('#toMapTools').click(function () {
+            var url = 'uid/' + userId + '/date/' + date + '/show_evidence/false/convert/false';
             toNewTabPage(url);
         });
     });
